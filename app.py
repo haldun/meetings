@@ -251,9 +251,6 @@ class NewMessageHandler(BaseHandler):
     })
     self.finish()
 
-import gc
-from guppy import hpy
-
 class Uploader(object):
   def __init__(self, config, user, room, file):
     self.config = config
@@ -262,8 +259,7 @@ class Uploader(object):
     self.file = file
 
   def __call__(self):
-    return
-    # self.upload()
+    self.upload()
 
   def upload(self):
     logging.info("Started uploading...")
