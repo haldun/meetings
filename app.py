@@ -47,6 +47,7 @@ class Application(tornado.web.Application):
       url(r'/rooms/(?P<id>\w+)', RoomHandler, name='room'),
       url(r'/rooms/(?P<id>\w+)/say', NewMessageHandler, name='new_message'),
       url(r'/rooms/(?P<id>\w+)/upload', UploadHandler, name='upload'),
+      url(r'/rooms/(?P<id>\w+)/delete', DeleteRoomHandler, name='delete_room'),
     ]
     settings = dict(
       debug=self.config.debug,
@@ -133,7 +134,6 @@ class BaseHandler(tornado.web.RequestHandler):
         self._rooms = []
       else:
         self._rooms =(_O(r) for r in self.db.rooms.find())
-        # self._rooms = (_O(r) for r in self.db.rooms.find({'owner': self.current_user._id}))
     return self._rooms
 
 
@@ -250,6 +250,23 @@ class NewMessageHandler(BaseHandler):
       }
     })
     self.finish()
+
+
+class DeleteRoomHandler(BaseHandler):
+  @tornado.web.authenticated
+  def post(self, id):
+    room = self.db.rooms.find_one({'_id': ObjectId(id)})
+    if room is None:
+      raise tornado.web.HTTPError(404)
+    room = _O(room)
+    if room.owner == self.current_user._id or self.current_user._id in room.admins:
+      self.db.rooms.remove({'_id': room._id})
+      self.db.messages.remove({'room': room._id})
+      # TODO Remove s3 resources
+      self.finish()
+    else:
+      raise tornado.web.HTTPError(403)
+
 
 class Uploader(object):
   def __init__(self, config, user, room, file):
