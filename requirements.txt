@@ -1,7 +1,7 @@
 tornado
 pymongo
 pylibmc
-yaml
+pyyaml
 boto
 pil
 wtforms
