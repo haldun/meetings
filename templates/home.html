@@ -4,6 +4,16 @@
 <div class="container">
   <h2>Rooms</h2>
 
+  <br>
+  {% if not rooms %}
+    <p>
+      There are no rooms right now.
+    </p>
+    <p>
+      <a href="{{ reverse_url('new') }}" class="btn primary large">Create your first room</a>
+    </p>
+  {% else %}
+
   <table class="zebra-striped">
     <thead>
       <tr>
@@ -26,6 +36,8 @@
       {% end %}
     </tbody>
   </table>
+
+  {% end %}
 </div>
 {% end %}
 

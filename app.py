@@ -172,7 +172,7 @@ class LogoutHandler(BaseHandler):
 class HomeHandler(BaseHandler):
   @tornado.web.authenticated
   def get(self):
-    rooms = (_O(r) for r in self.db.rooms.find({'members': self.current_user._id}))
+    rooms = list(_O(r) for r in self.db.rooms.find({'members': self.current_user._id}))
     self.render('home.html', rooms=rooms)
 
 
