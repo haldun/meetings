@@ -1,5 +1,30 @@
 {% extends "app_base.html" %}
 
-{% block content %}
-  Hey naber
+{% block container %}
+<div class="container">
+  <h2>Rooms</h2>
+
+  <table class="zebra-striped">
+    <thead>
+      <tr>
+        <th colspan="2"></th>
+      </tr>
+    </thead>
+    <tbody id="rooms">
+      {% for room in rooms %}
+        <tr>
+          <td>
+            <h3>
+              <a href="{{ reverse_url('room', room._id) }}">{{ room.name }}</a>
+              <small>{{ room.topic }}</small>
+            </h3>
+          </td>
+          <td>
+            5 users in
+          </td>
+        </tr>
+      {% end %}
+    </tbody>
+  </table>
+</div>
 {% end %}

@@ -3,7 +3,7 @@ body.app{padding:45px 0px 80px 0px;}
 * html div#content{height:100%;overflow:auto;}
 h1,h2,h3,h4{font-family:'Open Sans';font-weight:400;}
 #q{width:300px}
-.sidebar{position:fixed}
+/*.sidebar{position:fixed}*/
 form.bookmark input[type=text],form.bookmark textarea{width:500px}
 form.bookmark textarea{height:120px}
 .drag{cursor:move}
@@ -20,3 +20,4 @@ body>div#footer{position:fixed;}
 }
 #text_content{margin-left:250px;width:600px;height:40px;}
 #messages .user {width:20%}
+div.content{margin-top:10px}

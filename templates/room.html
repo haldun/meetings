@@ -27,13 +27,16 @@
 
 <h4>Files</h4>
 <ul>
+{% for file in files %}
+  <li>{{ file.filename }}</li>
+{% end %}
 </ul>
 
 <h4>Send File</h4>
 <div id="upload_container">
   <div id="filelist"></div>
-  <a href="#" id="select_files" class="button">Select files</a>
-  <a href="#" id="upload" class="button">Upload files</a>
+  <a href="#" id="select_files" class="btn">Select files</a>
+  <a href="#" id="upload" class="btn primary">Upload files</a>
 </div>
 {% end %}
 

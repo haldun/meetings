@@ -17,3 +17,4 @@ class BaseForm(Form):
 
 class RoomForm(BaseForm):
   name = TextField('Name', [Required()])
+  topic = TextField('Topic')
