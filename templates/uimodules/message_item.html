@@ -1,0 +1,12 @@
+<tr class="message {{ message.type }}">
+  <td class="user">
+    {{ message.user_name }}
+  </td>
+  <td>
+    {% if message.type == 'text' %}
+      {{ message.content }}
+    {% elif message.type == 'image' %}
+      <a href="{{ message.image_url }}"><img src="{{ message.thumbnail_url }}"></a>
+    {% end %}
+  </td>
+</tr>

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="header">
+  <div class="container"><h1>meetings</h1></div>
+</div>
+<div class="container">
+  <div class="content index">
+    <div class="row">
+      <div class="span10 columns">
+        <h2>Group chat reinvented!</h2>
+      </div>
+      <div class="span6 columns">
+        <h3>Sign in with your Google Account</h3>
+        <a href="{{ reverse_url('auth_google') }}">
+          <img src="https://github.com/intridea/authbuttons/raw/master/png/google_64.png"
+               align="absmiddle">Google
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% end %}

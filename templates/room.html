@@ -1,0 +1,255 @@
+{% extends "app_base.html" %}
+
+{% block content %}
+  <h2>{{ room.name }}</h2>
+
+  <table class="zebra-striped">
+    <tbody id="messages">
+      {% for message in recent_messages %}
+        {% module MessageItem(message) %}
+      {% end %}
+    </tbody>
+  </table>
+{% end %}
+
+{% block footer %}
+  <div id="footer">
+    <div id="footer-content">
+      <form action="{{ reverse_url('new_message', room._id) }}" method="post" id="new_message">
+        <textarea id="text_content" name="content" placeholder="Type your message and hit enter..."></textarea>
+        {% raw xsrf_form_html() %}
+      </form>
+    </div>
+  </div>
+{% end %}
+
+{% block sidebar %}
+
+<h4>Files</h4>
+<ul>
+</ul>
+
+<h4>Send File</h4>
+<div id="upload_container">
+  <div id="filelist"></div>
+  <a href="#" id="select_files" class="button">Select files</a>
+  <a href="#" id="upload" class="button">Upload files</a>
+</div>
+{% end %}
+
+{% block scripts %}
+<script src="{{ static_url('javascripts/plupload.full.js') }}"></script>
+<script>
+  var current_user = {
+    id: '{{ current_user._id }}',
+    name: "{{ escape(current_user.name or current_user.email) }}"
+  };
+  var $form = $('#new_message');
+  var $messages = $('#messages');
+  var $compose = $form.find('textarea');
+
+  var messageToDom = function(message) {
+    var $tr = $('<tr>');
+
+    $tr.append($('<td>').text(message.user_name));
+
+    var $content = $('<td>');
+
+    if (message.type == 'image') {
+      $content.append($('<img>').attr('src', message.url));
+    } else if (message.type == 'file') {
+      $content.append($('<a>').attr('href', message.url));
+    } else if (message.type == 'text') {
+      $content.html(linkify(message.content));
+    }
+
+    $tr.append($content);
+
+    return $tr;
+  };
+
+  PUBNUB.subscribe({
+    channel: '{{ room.token }}',
+    error: function() {
+      alert("Connection lost.");
+    },
+    callback: function(message) {
+      console.log(message);
+
+      if (message.type == 'image' || message.type == 'file') {
+        $messages.append(messageToDom(message));
+        scroll_page();
+      }
+
+      if (message.type == 'text' && message.user_id !== current_user.id) {
+        $messages.append(messageToDom(message));
+        scroll_page();
+      }
+    },
+    connect: function() {}
+  });
+
+  $messages.find('tr.text td').each(function(i, el) {
+    el.innerHTML = linkify(el.innerHTML);
+  });
+
+  $form.submit(function(e){
+    var $this = $(this), url = $this.attr('action');
+    $messages.append(messageToDom({
+      user_name: current_user.name,
+      content: $compose.val(),
+      type: 'text'
+    }));
+    scroll_page();
+    $.post(url, $this.serialize(), function(){
+    });
+    $this[0].reset();
+    e.preventDefault();
+  });
+
+  $compose.keypress(function(e) {
+    var code = (e.keyCode ? e.keyCode : e.which);
+    if (code === 13) {
+      e.preventDefault();
+      if ($(this).val() !== '') {
+        $form.submit();
+      }
+    }
+  });
+
+  var scroll_page = function() {
+    $('html, body').animate({scrollTop: $(document).height()}, 'slow');
+  };
+
+  $compose.focus();
+  setTimeout(scroll_page, 50);
+
+  var getCookie = function(name) {
+    var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
+    return r ? r[1] : undefined;
+  };
+
+  function format(){
+
+   var formatted_str = arguments[0] || '';
+
+   for(var i=1; i<arguments.length; i++){
+       var re = new RegExp("\\{"+(i-1)+"}", "gim");
+       formatted_str = formatted_str.replace(re, arguments[i]);
+   }
+
+   return formatted_str;
+};
+
+
+  function linkify(s){
+     var imgexts = [".bmp", ".gif", ".jpg", ".jpeg", ".png", ".tif"];
+     var match = s.match(/(https?:\/\/.*(?=&quot;|&#39;))|[^\s\t]{0}(http:\/\/[^\s\t]*)/);
+
+     if (match !== null && match !== undefined){
+         var temp = [];
+         for (var i=0; i< match.length; i++){
+             if(match[i] !== undefined && match[i] !== null &&
+                     temp.indexOf(match[i]) === -1){
+                 temp.push(match[i]);
+             }
+         };
+         for(var i=0; i< temp.length; i++){
+             var item = temp[i];
+             var ext = item.match(/\.[^\.]+$/);
+             if (ext !== undefined && ext !== null && imgexts.indexOf(ext[0]) !== -1){
+                 s = s.replace(item, thumbinize(item));
+             }else{
+                 if (item.match(/youtube\.com\/(v|watch)/)){
+                     s = s.replace(item, youtubeVideoEmbedder(item));
+                 }else{
+                     s = s.replace(item, format("<a href='{0}' target='_blank'>{0}</a>",
+                                          item));
+                 }
+             }
+         }
+     };
+     return s;
+  };
+
+
+  function youtubeVideoEmbedder(url){
+   var width = 300;
+   var height = 200;
+
+   var part = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9\-_]+)/);
+   if (part){
+       url = "http://www.youtube.com/v/" + part[1];
+   }
+
+   return format ('<object width="{0}" height="{1}">' +
+    '<param name="movie" value="{2}?fs=1"</param>' +
+    '<param name="allowFullScreen" value="true"></param>' +
+    '<param name="wmode" value="transparent">' +
+    '<embed src="{2}?fs=1"' +
+    ' type="application/x-shockwave-flash"'+
+    ' allowfullscreen="true"' +
+    ' width="{0}" height="{1}" wmode="transparent">' +
+    '</embed>' +
+    '</object>', width, height, url);
+  };
+
+
+  // Uploader
+  (function(){
+    var uploader = new plupload.Uploader({
+      runtimes: 'html5,flash',
+      browse_button: 'select_files',
+      container: 'upload_container',
+      max_file_size: '10mb',
+      url: '/rooms/{{ room._id }}/upload',
+      flash_swf_url: '{{ static_url('javascripts/plupload.flash.swf') }}',
+      filters: [],
+      multipart: true,
+      multipart_params: {
+        '_xsrf': getCookie('_xsrf'),
+        'auth_token': getCookie('auth_token')
+      }
+    });
+
+    uploader.bind('Init', function(up, params) {});
+
+    uploader.bind('FilesAdded', function(up, files) {
+      $.each(files, function(i, file) {
+        $('#filelist').append(
+          $('<div>').attr('id', file.id).text(
+              file.name + ' (' + plupload.formatSize(file.size) + ')')
+          .append('<b>')
+        );
+      });
+      up.refresh();
+    });
+
+    uploader.bind('UploadProgress', function(up, file) {
+      $('#' + file.id + " b").html(file.percent + "%");
+    });
+
+    uploader.bind('Error', function(up, err) {
+      $('#filelist').append("<div>Error: " + err.code +
+        ", Message: " + err.message +
+        (err.file ? ", File: " + err.file.name : "") +
+        "</div>"
+      );
+
+      up.refresh();
+    });
+
+    uploader.bind('FileUploaded', function(up, file) {
+      $('#' + file.id + " b").html("100%");
+    });
+
+    $('#upload').click(function(e) {
+      uploader.start();
+      e.preventDefault();
+    });
+
+    uploader.init();
+  })();
+
+</script>
+{% end %}

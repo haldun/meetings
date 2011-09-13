@@ -1,0 +1,13 @@
+port: 8888
+debug: True
+cookie_secret: too_secret
+mongodb_database: meetings_development
+memcache_servers:
+  - 127.0.0.1
+pubnub_publish_key: demo
+pubnub_subscribe_key: demo
+pubnub_secret_key:
+pubnub_ssl_on: False
+aws_access_key_id: AKIAJLDMFGCYJXLHWTMQ
+aws_secret_access_key: 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
+s3_bucket_name: hb-meetings-dev

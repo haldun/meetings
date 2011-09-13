@@ -1,0 +1,7 @@
+tornado
+pymongo
+pylibmc
+yaml
+boto
+pil
+wtforms
