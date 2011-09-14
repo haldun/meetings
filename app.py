@@ -5,8 +5,8 @@ try:
   from cStringIO import StringIO
 except ImportError:
   from StringIO import StringIO
-from multiprocessing import Process, Queue, Pipe, Pool
 import mimetypes
+import tempfile
 
 # Tornado imports
 import tornado.auth
@@ -18,6 +18,7 @@ import tornado.web
 from tornado.options import define, options
 from tornado.web import url, _O
 
+import hotqueue
 import pylibmc
 import yaml
 import pymongo
@@ -29,7 +30,6 @@ from PIL import Image
 # App imports
 import forms
 import pubnub
-import pubnub_sync
 import uimodules
 import util
 
@@ -57,11 +57,11 @@ class Application(tornado.web.Application):
       xsrf_cookies=True,
       cookie_secret=self.config.cookie_secret,
       ui_modules=uimodules,
-      pool=Pool(1),
     )
     tornado.web.Application.__init__(self, handlers, **settings)
     self.connection = pymongo.Connection()
     self.db = self.connection[self.config.mongodb_database]
+    self.upload_queue = hotqueue.HotQueue('upload', host='localhost', port=6379, db=0)
     # TODO create indexes here
 
   @property
@@ -133,7 +133,7 @@ class BaseHandler(tornado.web.RequestHandler):
       if not self.current_user:
         self._rooms = []
       else:
-        self._rooms =(_O(r) for r in self.db.rooms.find())
+        self._rooms =(_O(r) for r in self.db.rooms.find({'members': self.current_user._id}))
     return self._rooms
 
 
@@ -198,41 +198,55 @@ class NewRoomHandler(BaseHandler):
       self.render('new.html', form=form)
 
 
-class RoomHandler(BaseHandler):
+def room_required(method):
   @tornado.web.authenticated
-  def get(self, id):
+  def _wrapper(self, id, *args, **kwds):
+    try:
+      id = ObjectId(id)
+    except:
+      raise tornado.web.HTTPError(400)
     room = self.db.rooms.find_one({'_id': ObjectId(id)})
     if room is None:
       raise tornado.web.HTTPError(404)
     room = _O(room)
-    if room.owner != self.current_user._id and self.current_user._id not in room.members:
+    if self.current_user._id not in room.members:
       raise tornado.web.HTTPError(403)
+    self.room = room
+    return method(self, *args, **kwds)
+  return _wrapper
+
+
+def room_admin_required(method):
+  @room_required
+  def _wrapper(self, *args, **kwds):
+    if self.current_user._id != self.room.owner and self.current_user._id not in self.room.admins:
+      raise tornado.web.HTTPError(403)
+    return method(self, *args, **kwds)
+  return _wrapper
+
+
+class RoomHandler(BaseHandler):
+  @room_required
+  def get(self):
     recent_messages = (_O(m) for m in self.db.messages.find({
-      'room': room._id,
+      'room': self.room._id,
     }))
     files = (_O(m) for m in self.db.messages.find({
-      'room': room._id,
+      'room': self.room._id,
       'type': {'$in': ['file', 'image']},
     }))
     self.render('room.html',
-                room=room,
+                room=self.room,
                 recent_messages=recent_messages,
                 files=files)
 
 
 class NewMessageHandler(BaseHandler):
-  @tornado.web.authenticated
-  def post(self, id):
-    """docstring for post"""
-    room = self.db.rooms.find_one({'_id': ObjectId(id)})
-    if room is None:
-      raise tornado.web.HTTPError(404)
-    room = _O(room)
-    if room.owner != self.current_user._id and self.current_user._id not in room.members:
-      raise tornado.web.HTTPError(403)
+  @room_required
+  def post(self):
     content = self.get_argument('content')
     message = {
-      'room': room._id,
+      'room': self.room._id,
       'user_id': self.current_user._id,
       'user_name': self.current_user.name or self.current_user.email,
       'type': 'text',
@@ -241,7 +255,7 @@ class NewMessageHandler(BaseHandler):
     }
     self.db.messages.insert(message)
     self.pubnub.publish({
-      'channel': room.token,
+      'channel': self.room.token,
       'message': {
         'content': message['content'],
         'user_id': str(message['user_id']),
@@ -253,142 +267,12 @@ class NewMessageHandler(BaseHandler):
 
 
 class DeleteRoomHandler(BaseHandler):
-  @tornado.web.authenticated
-  def post(self, id):
-    room = self.db.rooms.find_one({'_id': ObjectId(id)})
-    if room is None:
-      raise tornado.web.HTTPError(404)
-    room = _O(room)
-    if room.owner == self.current_user._id or self.current_user._id in room.admins:
-      self.db.rooms.remove({'_id': room._id})
-      self.db.messages.remove({'room': room._id})
-      # TODO Remove s3 resources
-      self.finish()
-    else:
-      raise tornado.web.HTTPError(403)
-
-
-class Uploader(object):
-  def __init__(self, config, user, room, file):
-    self.config = config
-    self.user = user
-    self.room = room
-    self.file = file
-
-  def __call__(self):
-    self.upload()
-
-  def upload(self):
-    logging.info("Started uploading...")
-
-    # Is this an image?
-    im = None
-
-    try:
-      im = Image.open(StringIO(self.file['body']))
-    except:
-      pass
-
-    # Determine message type
-    if im:
-      message_type = 'image'
-    else:
-      message_type = 'file'
-
-    # Thumbnail if image
-    if im:
-      im.thumbnail((300, 300), Image.ANTIALIAS)
-
-    # Upload file to the S3
-    bucket = self.get_bucket()
-    key = boto.s3.key.Key(bucket)
-    key.key = self.get_keyname()
-
-    if im:
-      key.set_metadata('Content-Type', 'image/%s' % im.format.lower())
-    else:
-      content_type, _ = mimetypes.guess_type(self.file['filename'])
-      if content_type is not None:
-        key.set_metadata('Content-Type', content_type)
-
-    key.set_contents_from_string(self.file['body'])
-
-    # Upload thumbnail
-    if im:
-      try:
-        name, ext = os.path.splitext(self.file['filename'])
-        thumbname = '/rooms/%s/%s_thumb%s' % (self.room._id, name, ext)
-        thumbnail = StringIO()
-        im.save(thumbnail, "JPEG")
-        thumb_key = boto.s3.key.Key(bucket)
-        thumb_key.key = thumbname
-        thumb_key.set_contents_from_string(thumbnail.getvalue())
-        thumbnail.close()
-      except:
-        traceback.print_exc()
-    # Create a message
-    content = '%s posted a file' % self.user.name or self.user.email
-    message = {
-      'room': self.room._id,
-      'user_id': self.user._id,
-      'user_name': self.user.name or self.user.email,
-      'type': message_type,
-      'filename': self.file['filename'],
-      's3_key': key.key,
-      'content': content,
-      'created_at': datetime.datetime.utcnow(),
-    }
-    if message_type == 'image':
-      message['s3_thumbnail_key'] = thumb_key.key
-      message['size'] = im.size
-
-    message_id = self.db.messages.insert(message)
-    self.pubnub.publish({
-      'channel': self.room.token,
-      'message': {
-        'content': message['content'],
-        'user_id': str(message['user_id']),
-        'user_name': message['user_name'],
-        'type': message_type,
-        'url': im and thumb_key.generate_url(3600) or key.generate_url(3600),
-      }
-    })
-
-    logging.info("Finished uploading %s" % os.getpid())
-    del self.file['body']
-
-    try:
-      del im
-      del thumbnail
-      del self.file
-    except:
-      pass
-    return 0
-
-  def get_bucket(self):
-    conn = boto.s3.connection.S3Connection(
-        self.config.aws_access_key_id, self.config.aws_secret_access_key)
-    return conn.create_bucket(self.config.s3_bucket_name)
-
-  def get_keyname(self):
-    return '/rooms/%s/%s' % (self.room._id, self.file['filename'])
-
-  @property
-  def db(self):
-    if not hasattr(self, '_db'):
-      connection = pymongo.Connection()
-      self._db = connection[self.config.mongodb_database]
-    return self._db
-
-  @property
-  def pubnub(self):
-    if not hasattr(self, '_pubnub'):
-      self._pubnub = pubnub_sync.Pubnub(self.config.pubnub_publish_key,
-                                        self.config.pubnub_subscribe_key,
-                                        self.config.pubnub_secret_key,
-                                        self.config.pubnub_ssl_on)
-    return self._pubnub
-
+  @room_admin_required
+  def post(self):
+    self.db.rooms.remove({'_id': self.room._id})
+    self.db.messages.remove({'room': self.room._id})
+    # TODO Remove s3 resources
+    self.finish()
 
 class UploadHandler(BaseHandler):
   # Flash workaround here
@@ -399,27 +283,21 @@ class UploadHandler(BaseHandler):
       xsrf = self.get_argument('_xsrf', None)
       self.request.headers['Cookie'] = 'auth_token=%s; _xsrf=%s' % (auth_token, xsrf)
 
-  @tornado.web.asynchronous
-  def post(self, id):
-    room = self.db.rooms.find_one({'_id': ObjectId(id)})
-    if room is None:
-      raise tornado.web.HTTPError(404)
-    room = _O(room)
-    if room.owner != self.current_user._id and self.current_user._id not in room.members:
-      raise tornado.web.HTTPError(403)
+  @room_required
+  def post(self):
     file = self.request.files['file'][0]
-    p = self.application.settings.get('pool')
-    p.apply_async(Uploader(self.config, self.current_user, room, file),
-                  [], callback=self.async_callback(self.on_getpid))
-    del room
-
-  def on_getpid(self, key):
-    self.request.files = None
+    tmpfile = tempfile.NamedTemporaryFile(delete=False)
+    tmpfile.file.write(file['body'])
+    tmpfile.file.close()
+    self.application.upload_queue.put({
+      'file': tmpfile.name,
+      'filename': file['filename'],
+      'room_id': self.room._id,
+      'user_id': self.current_user._id,
+      'username': self.current_user.name or self.current_user.email,
+      'room_token': self.room.token,
+    })
     self.write(dict(jsonrpc='2.0', result=None, id='id'))
-    try:
-      self.finish()
-    except:
-      pass
 
 def main():
   tornado.options.parse_command_line()
