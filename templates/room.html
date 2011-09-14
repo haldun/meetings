@@ -54,7 +54,7 @@
   var messageToDom = function(message) {
     var $tr = $('<tr>');
 
-    $tr.append($('<td>').text(message.user_name));
+    $tr.append($('<td>').addClass('user').text(message.user_name));
 
     var $content = $('<td>');
 
