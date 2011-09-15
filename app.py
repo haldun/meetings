@@ -58,6 +58,10 @@ class Application(tornado.web.Application):
       url(r'/home', HomeHandler, name='home'),
       url(r'/new', NewRoomHandler, name='new'),
       url(r'/rooms/(?P<id>\w+)', RoomHandler, name='room'),
+      url(r'/rooms/(?P<id>\w+)/messages', MessagesHandler, name='messages'),
+      url(r'/rooms/(?P<id>\w+)/files', FilesHandler, name='files'),
+      url(r'/rooms/(?P<id>\w+)/transcripts', TranscriptsHandler, name='transcripts'),
+      url(r'/rooms/(?P<id>\w+)/settings', SettingsHandler, name='settings'),
       url(r'/rooms/(?P<id>\w+)/say', NewMessageHandler, name='new_message'),
       url(r'/rooms/(?P<id>\w+)/upload', UploadHandler, name='upload'),
       url(r'/rooms/(?P<id>\w+)/leave', LeaveRoomHandler, name='leave_room'),
@@ -237,14 +241,6 @@ def room_admin_required(method):
 class RoomHandler(BaseHandler):
   @room_required
   def get(self):
-    recent_messages = [
-      Model(m) for m in self.db.messages.find({'room': self.room._id,})
-    ]
-    files = (Model(m) for m in self.db.messages.find({
-      'room': self.room._id,
-      'type': {'$in': ['file', 'image']},
-    }))
-
     # Update current users list for the user
     if not self.room.current_users:
       self.room.current_users = []
@@ -262,13 +258,42 @@ class RoomHandler(BaseHandler):
       })
     self.render('room.html',
                 room=self.room,
-                recent_messages=recent_messages,
-                files=files,
                 current_users=self.get_current_users())
 
   def get_current_users(self):
     return (Model(user) for user in self.db.users.find(
             {'_id': {'$in': list(self.room.current_users)}}))
+
+
+class MessagesHandler(BaseHandler):
+  @room_required
+  def get(self):
+    recent_messages = [
+      Model(m) for m in self.db.messages.find({'room': self.room._id,})
+    ]
+    self.render('messages.html', recent_messages=recent_messages)
+
+
+class FilesHandler(BaseHandler):
+  @room_required
+  def get(self):
+    files = (Model(m) for m in self.db.messages.find({
+      'room': self.room._id,
+      'type': {'$in': ['file', 'image']},
+    }))
+    self.render('files.html', files=files)
+
+
+class TranscriptsHandler(BaseHandler):
+  @room_required
+  def get(self):
+    self.write("transcripts")
+
+
+class SettingsHandler(BaseHandler):
+  @room_admin_required
+  def get(self):
+    self.write("settings")
 
 
 class NewMessageHandler(BaseHandler):
@@ -408,12 +433,10 @@ class InvitationHandler(BaseHandler):
     if self.current_user:
       room.members.append(self.current_user._id)
       self.db.rooms.save(room)
-
       invitation.status = InvitationStatus.ACCEPTED
       invitation.accepted_by = self.current_user._id
       invitation.accepted_at = datetime.datetime.utcnow()
       self.invitations.save(invitation)
-
       self.redirect(self.reverse_url('room', room._id))
     else:
       self.redirect(self.reverse_url('auth_google') + '?next=%s' % self.request.uri)

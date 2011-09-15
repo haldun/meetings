@@ -8,10 +8,10 @@
 <div class="container-fluid">
   <div class="sidebar">
     <ul class="unstyled" id="room-menu">
-      <li><a href="" class="active messages">Messages</a></li>
-      <li><a href="" class="files">Files</a></li>
-      <li><a href="" class="transcripts">Transcripts</a></li>
-      <li><a href="" class="settings">Settings</a></li>
+      <li><a href="{{ reverse_url('messages', room._id) }}" class="active messages">Messages</a></li>
+      <li><a href="{{ reverse_url('files', room._id) }}" class="files">Files</a></li>
+      <li><a href="{{ reverse_url('transcripts', room._id) }}" class="transcripts">Transcripts</a></li>
+      <li><a href="{{ reverse_url('settings', room._id) }}" class="settings">Settings</a></li>
       <li><a href="{{ reverse_url('leave_room', room._id) }}" class="leave">Leave</a></li>
     </ul>
 
@@ -23,23 +23,7 @@
     </ul>
   </div>
 
-  <div class="content">
-    {% if not recent_messages %}
-      <div class="alert-message success" id="no-messages">
-        <a class="close" href="#">×</a>
-        <p>There are no messages in this room. Type the first message!</p>
-      </div>
-    {% end %}
-
-    <table id="messages" class="zebra-striped">
-      <tbody>
-        {% for message in recent_messages %}
-          {% module MessageItem(message) %}
-        {% end %}
-      </tbody>
-    </table>
-
-  </div>
+  <div class="content" id="content"></div>
 </div>
 
 <div id="footer">
@@ -55,13 +39,13 @@
 
 {% block scripts %}
 <script src="{{ static_url('javascripts/plupload.full.js') }}"></script>
+<script src="{{ static_url('javascripts/jquery.address.js') }}"></script>
 <script>
   var current_user = {
     id: '{{ current_user._id }}',
     name: "{{ escape(current_user.name or current_user.email) }}"
   };
   var $form = $('#new_message');
-  var $messages = $('#messages');
   var $compose = $form.find('textarea');
 
   var messageToDom = function(message) {
@@ -95,12 +79,12 @@
     },
     callback: function(message) {
       if (message.type == 'image' || message.type == 'file') {
-        $messages.append(messageToDom(message));
+        $('#messages').append(messageToDom(message));
         scroll_page();
       }
 
       if (message.type == 'text' && message.user_id !== current_user.id) {
-        $messages.append(messageToDom(message));
+        $('#messages').append(messageToDom(message));
         scroll_page();
       }
 
@@ -119,13 +103,13 @@
     connect: function() {}
   });
 
-  $messages.find('tr.text td').each(function(i, el) {
+  $('#messages').find('tr.text td').each(function(i, el) {
     el.innerHTML = linkify(el.innerHTML);
   });
 
   $form.submit(function(e){
     var $this = $(this), url = $this.attr('action');
-    $messages.append(messageToDom({
+    $('#messages').append(messageToDom({
       user_name: current_user.name,
       content: $compose.val(),
       type: 'text'
@@ -152,7 +136,7 @@
   };
 
   $compose.focus();
-  setTimeout(scroll_page, 50);
+  // setTimeout(scroll_page, 50);
 
   var getCookie = function(name) {
     var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
@@ -280,6 +264,28 @@
 
     uploader.init();
   })();
+
+  $.address.change(function(event) {
+    if (event.value === '/') {
+      $('#room-menu a:first').click();
+      return;
+    }
+
+    $('#room-menu a').removeClass('active');
+    $('#room-menu a[href*="' + event.value + '"]').addClass('active');
+    $('#content').load('/rooms/{{ room._id }}' + event.value, function(){
+      if (event.value === '/messages') {
+        scroll_page();
+      }
+    });
+  });
+
+  $('#room-menu a:not(.leave)').address(function(){
+    $('#room-menu a').removeClass('active');
+    $(this).addClass('active');
+    var parts = $(this).attr('href').split('/');
+    return parts[parts.length - 1];
+  });
 
 </script>
 {% end %}
