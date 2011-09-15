@@ -5,3 +5,6 @@ pyyaml
 boto
 pil
 wtforms
+redis
+hiredis
+hotqueue

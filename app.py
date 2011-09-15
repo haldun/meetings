@@ -22,6 +22,7 @@ import hotqueue
 import pylibmc
 import yaml
 import pymongo
+import redis
 
 import boto.s3.connection
 from pymongo.objectid import ObjectId
@@ -59,6 +60,7 @@ class Application(tornado.web.Application):
       url(r'/rooms/(?P<id>\w+)', RoomHandler, name='room'),
       url(r'/rooms/(?P<id>\w+)/say', NewMessageHandler, name='new_message'),
       url(r'/rooms/(?P<id>\w+)/upload', UploadHandler, name='upload'),
+      url(r'/rooms/(?P<id>\w+)/leave', LeaveRoomHandler, name='leave_room'),
       url(r'/rooms/(?P<id>\w+)/delete', DeleteRoomHandler, name='delete_room'),
       url(r'/rooms/(?P<id>\w+)/invite', NewInvitationHandler, name='invite'),
       url(r'/rooms/(?P<id>\w+)/invitations', InvitationsHandler, name='invitations'),
@@ -76,6 +78,8 @@ class Application(tornado.web.Application):
     tornado.web.Application.__init__(self, handlers, **settings)
     self.connection = pymongo.Connection()
     self.db = self.connection[self.config.mongodb_database]
+    # TODO Configurable settings for redis
+    self.redis = redis.Redis(host='localhost', port=6379, db=0)
     self.upload_queue = hotqueue.HotQueue('upload', host='localhost', port=6379, db=0)
     # TODO create indexes here
     self.memcache = pylibmc.Client(
@@ -99,6 +103,10 @@ class BaseHandler(tornado.web.RequestHandler):
   @property
   def db(self):
     return self.application.db
+
+  @property
+  def redis(self):
+    return self.application.redis
 
   @property
   def memcache(self):
@@ -229,15 +237,38 @@ def room_admin_required(method):
 class RoomHandler(BaseHandler):
   @room_required
   def get(self):
-    recent_messages = (
+    recent_messages = [
       Model(m) for m in self.db.messages.find({'room': self.room._id,})
-    )
+    ]
     files = (Model(m) for m in self.db.messages.find({
       'room': self.room._id,
       'type': {'$in': ['file', 'image']},
     }))
-    self.render(
-      'room.html', room=self.room, recent_messages=recent_messages, files=files)
+
+    # Update current users list for the user
+    if not self.room.current_users:
+      self.room.current_users = []
+
+    if self.current_user._id not in self.room.current_users:
+      self.room.current_users.append(self.current_user._id)
+      self.db.rooms.save(self.room)
+    self.pubnub.publish({
+        'channel': self.room.token,
+        'message': {
+          'type': 'presence',
+          'user_id': str(self.current_user._id),
+          'user_name': self.current_user.name or self.current_user.email,
+        }
+      })
+    self.render('room.html',
+                room=self.room,
+                recent_messages=recent_messages,
+                files=files,
+                current_users=self.get_current_users())
+
+  def get_current_users(self):
+    return (Model(user) for user in self.db.users.find(
+            {'_id': {'$in': list(self.room.current_users)}}))
 
 
 class NewMessageHandler(BaseHandler):
@@ -263,6 +294,26 @@ class NewMessageHandler(BaseHandler):
       }
     })
     self.finish()
+
+
+class LeaveRoomHandler(BaseHandler):
+  @room_required
+  def get(self):
+    if self.room.current_users:
+      try:
+        self.room.current_users.remove(self.current_user._id)
+        self.db.rooms.save(self.room)
+        self.pubnub.publish({
+          'channel': self.room.token,
+          'message': {
+            'type': 'leave',
+            'user_id': str(self.current_user._id),
+            'user_name': self.current_user.name or self.current_user.email
+          }
+        })
+      except ValueError:
+        pass
+    self.redirect(self.reverse_url('home'))
 
 
 class DeleteRoomHandler(BaseHandler):

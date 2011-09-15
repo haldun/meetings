@@ -9,16 +9,24 @@
       <li><a href="">Files</a></li>
       <li><a href="">Transcripts</a></li>
       <li><a href="">Settings</a></li>
+      <li><a href="{{ reverse_url('leave_room', room._id) }}">Leave</a></li>
     </ul>
 
     <ul class="unstyled" id="room-users">
-      {% for i in range(15) %}
-        <li>User {{ i }}</li>
+      {% for user in current_users %}
+        <li id="user_{{ user._id }}">{{ user.name or user.email }}</li>
       {% end %}
     </ul>
   </div>
 
   <div class="content">
+    {% if not recent_messages %}
+      <div class="alert-message success" id="no-messages">
+        <a class="close" href="#">×</a>
+        <p>There are no messages in this room. Type the first message!</p>
+      </div>
+    {% end %}
+
     <table id="messages" class="zebra-striped">
       <tbody>
         {% for message in recent_messages %}
@@ -26,6 +34,7 @@
         {% end %}
       </tbody>
     </table>
+
   </div>
 </div>
 
@@ -37,26 +46,6 @@
       {% module MessageComposer(room) %}
     </div>
   </div>
-</div>
-{% end %}
-
-{% block footer %}
-{% end %}
-
-{% block sidebar %}
-
-<h4>Files</h4>
-<ul>
-{% for file in files %}
-  <li>{{ file.filename }}</li>
-{% end %}
-</ul>
-
-<h4>Send File</h4>
-<div id="upload_container">
-  <div id="filelist"></div>
-  <a href="#" id="select_files" class="btn">Select files</a>
-  <a href="#" id="upload" class="btn primary">Upload files</a>
 </div>
 {% end %}
 
@@ -90,6 +79,8 @@
 
     $tr.append($content);
 
+    $('#no-messages').fadeOut('slow');
+
     return $tr;
   };
 
@@ -99,8 +90,6 @@
       alert("Connection lost.");
     },
     callback: function(message) {
-      console.log(message);
-
       if (message.type == 'image' || message.type == 'file') {
         $messages.append(messageToDom(message));
         scroll_page();
@@ -109,6 +98,18 @@
       if (message.type == 'text' && message.user_id !== current_user.id) {
         $messages.append(messageToDom(message));
         scroll_page();
+      }
+
+      if (message.type == 'presence' && message.user_id !== current_user.id) {
+        var id = 'user_' + message.user_id;
+        if ($('#' + id).length === 0) {
+          var el = $('<li>').attr('id', id).text(message.user_name);
+          $('#room-users').append(el);
+        }
+      }
+
+      if (message.type == 'leave') {
+        $('#user_' + message.user_id).fadeOut('slow').remove();
       }
     },
     connect: function() {}
