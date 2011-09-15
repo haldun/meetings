@@ -18,6 +18,7 @@ class BaseForm(Form):
 class RoomForm(BaseForm):
   name = TextField('Name', [Required()])
   topic = TextField('Topic')
+  is_public = BooleanField('Is public?')
 
 
 class InvitationForm(BaseForm):

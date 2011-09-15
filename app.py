@@ -208,8 +208,9 @@ def room_required(method):
     if room is None:
       raise tornado.web.HTTPError(404)
     room = Model(room)
-    if self.current_user._id not in room.members:
-      raise tornado.web.HTTPError(403)
+    if not room.is_public:
+      if self.current_user._id not in room.members:
+        raise tornado.web.HTTPError(403)
     self.room = room
     return method(self, *args, **kwds)
   return _wrapper
