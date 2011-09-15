@@ -1,9 +1,12 @@
 {% extends "app_base.html" %}
 
 {% block container %}
+<div class="heading container-fluid">
+  <h3>{{ room.name }} <small>{{ room.topic }}</small></h3>
+</div>
+
 <div class="container-fluid">
   <div class="sidebar">
-    <h3>{{ room.name }} <small>{{ room.topic }}</small></h3>
     <ul class="unstyled" id="room-menu">
       <li><a href="" class="active">Messages</a></li>
       <li><a href="">Files</a></li>
@@ -12,6 +15,7 @@
       <li><a href="{{ reverse_url('leave_room', room._id) }}">Leave</a></li>
     </ul>
 
+    <h4>Who's here?</h4>
     <ul class="unstyled" id="room-users">
       {% for user in current_users %}
         <li id="user_{{ user._id }}">{{ user.name or user.email }}</li>
