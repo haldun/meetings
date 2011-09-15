@@ -1,23 +1,44 @@
 {% extends "app_base.html" %}
 
-{% block content %}
-  <h2>{{ room.name }}</h2>
+{% block container %}
+<div class="container">
+  <div class="room-heading container">
+    <h3>{{ room.name }} <small>{{ room.topic }}</small></h3>
 
-  <table class="zebra-striped">
-    <tbody id="messages">
+    <ul class="tabs">
+      <li class="active"><a href="#">Messages</a></li>
+      <li><a href="#">Files</a></li>
+      <li><a href="#">History</a></li>
+      <li><a href="#">Settings</a></li>
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle">Dropdown</a>
+        <ul class="dropdown-menu">
+          <li><a href="#">Secondary link</a></li>
+          <li><a href="#">Something else here</a></li>
+          <li class="divider"></li>
+          <li><a href="#">Another link</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <table id="messages" class="zebra-striped">
+    <tbody>
       {% for message in recent_messages %}
         {% module MessageItem(message) %}
       {% end %}
     </tbody>
   </table>
+</div>
+
+<div id="footer">
+  <div id="footer-content" class="container">
+    {% module MessageComposer(room) %}
+  </div>
+</div>
 {% end %}
 
 {% block footer %}
-  <div id="footer">
-    <div id="footer-content">
-      {% module MessageComposer(room) %}
-    </div>
-  </div>
 {% end %}
 
 {% block sidebar %}
