@@ -8,11 +8,11 @@
 <div class="container-fluid">
   <div class="sidebar">
     <ul class="unstyled" id="room-menu">
-      <li><a href="" class="active">Messages</a></li>
-      <li><a href="">Files</a></li>
-      <li><a href="">Transcripts</a></li>
-      <li><a href="">Settings</a></li>
-      <li><a href="{{ reverse_url('leave_room', room._id) }}">Leave</a></li>
+      <li><a href="" class="active messages">Messages</a></li>
+      <li><a href="" class="files">Files</a></li>
+      <li><a href="" class="transcripts">Transcripts</a></li>
+      <li><a href="" class="settings">Settings</a></li>
+      <li><a href="{{ reverse_url('leave_room', room._id) }}" class="leave">Leave</a></li>
     </ul>
 
     <h4>Who's here?</h4>
