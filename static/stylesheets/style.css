@@ -27,7 +27,7 @@ body>div#footer{position:fixed;}
 .sidebar ul li {}
 .sidebar a{display:block;line-height:22px;background-position:3px center;text-decoration:none;padding:5px 5px 5px 20px;background-repeat:no-repeat;}
 .sidebar a:hover{background-color:#F2F2F2;}
-.sidebar a.active{color:#A11F72}
+.sidebar a.active{color:#D62899}
 #room-users li{padding:5px}
 .heading{position:fixed;height:40px;width:100%;background:#fff;top:40px}
 #room-menu a{background-image:url(../images/sprite.png)}
