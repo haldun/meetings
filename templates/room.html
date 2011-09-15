@@ -151,7 +151,7 @@
   };
 
   $compose.focus();
-  setTimeout(scroll_page, 50);
+  // setTimeout(scroll_page, 50);
 
   var getCookie = function(name) {
     var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
@@ -286,20 +286,18 @@
   $.address.state('/').init(function(event){
     $('#room-menu a:not(.leave)').address();
   }).change(function(event){
-    var value = event.value.replace('#', '');
-    console.log(value);
-
-    if (value == initial_pathname) {
+    if (event.value == initial_pathname) {
       if (didnt_changed) {
         return;
       }
-      value = initial_pathname + '/messages';
+      event.value = initial_pathname + '/messages';
     }
 
     $('#room-menu a').removeClass('active');
-    $('#room-menu a[href*="' + value + '"]').addClass('active');
-    $('#content').load(value, function(){
-      if (value === '/messages') {
+    $('#room-menu a[href*="' + event.value + '"]').addClass('active');
+    $('#content').load(event.value, function(){
+      var parts = event.value.split('/');
+      if (parts[parts.length - 1] === 'messages') {
         scroll_page();
       }
     });
