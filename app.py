@@ -241,6 +241,14 @@ def room_admin_required(method):
 class RoomHandler(BaseHandler):
   @room_required
   def get(self):
+    recent_messages = [
+      Model(m) for m in self.db.messages.find({'room': self.room._id,})
+    ]
+    files = (Model(m) for m in self.db.messages.find({
+      'room': self.room._id,
+      'type': {'$in': ['file', 'image']},
+    }))
+
     # Update current users list for the user
     if not self.room.current_users:
       self.room.current_users = []
@@ -258,6 +266,8 @@ class RoomHandler(BaseHandler):
       })
     self.render('room.html',
                 room=self.room,
+                recent_messages=recent_messages,
+                files=files,
                 current_users=self.get_current_users())
 
   def get_current_users(self):

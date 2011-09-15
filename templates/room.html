@@ -23,7 +23,22 @@
     </ul>
   </div>
 
-  <div class="content" id="content"></div>
+  <div class="content" id="content">
+    {% if not recent_messages %}
+      <div class="alert-message success" id="no-messages">
+        <a class="close" href="#">×</a>
+        <p>There are no messages in this room. Type the first message!</p>
+      </div>
+    {% end %}
+
+    <table id="messages" class="zebra-striped">
+      <tbody>
+        {% for message in recent_messages %}
+          {% module MessageItem(message) %}
+        {% end %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <div id="footer">
@@ -136,7 +151,7 @@
   };
 
   $compose.focus();
-  // setTimeout(scroll_page, 50);
+  setTimeout(scroll_page, 50);
 
   var getCookie = function(name) {
     var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
@@ -265,27 +280,49 @@
     uploader.init();
   })();
 
-  $.address.change(function(event) {
-    if (event.value === '/') {
-      $('#room-menu a:first').click();
-      return;
+  var initial_pathname = document.location.pathname;
+  var didnt_changed = true;
+
+  $.address.state('/').init(function(event){
+    $('#room-menu a:not(.leave)').address();
+  }).change(function(event){
+    var value = event.value.replace('#', '');
+    console.log(value);
+
+    if (value == initial_pathname) {
+      if (didnt_changed) {
+        return;
+      }
+      value = initial_pathname + '/messages';
     }
 
     $('#room-menu a').removeClass('active');
-    $('#room-menu a[href*="' + event.value + '"]').addClass('active');
-    $('#content').load('/rooms/{{ room._id }}' + event.value, function(){
-      if (event.value === '/messages') {
+    $('#room-menu a[href*="' + value + '"]').addClass('active');
+    $('#content').load(value, function(){
+      if (value === '/messages') {
         scroll_page();
       }
     });
-  });
+    didnt_changed = false;
+  })
 
-  $('#room-menu a:not(.leave)').address(function(){
-    $('#room-menu a').removeClass('active');
-    $(this).addClass('active');
-    var parts = $(this).attr('href').split('/');
-    return parts[parts.length - 1];
-  });
+
+
+  //
+  // $.address.init(function(event) {
+  //   // console.log(event.value)
+  //   //     if (event.value === '/') {
+  //   //       return;
+  //   //     }
+  // });
+  //
+  // $('#room-menu a:not(.leave)').address(function(){
+  //   $('#room-menu a').removeClass('active');
+  //   $(this).addClass('active');
+  //   var parts = $(this).attr('href').split('/');
+  //   return parts[parts.length - 1];
+  // });
+
 
 </script>
 {% end %}
