@@ -56,11 +56,11 @@
     var $content = $('<td>');
 
     if (message.type == 'image') {
-      var $a = $('<a>').attr('href', message.url);
+      var $a = $('<a>').attr({href: message.url, target: '_blank'});
       $a.append($('<img>').attr('src', message.thumb_url));
       $content.append($a);
     } else if (message.type == 'file') {
-      $content.append($('<a>').attr('href', message.url).text(message.url));
+      $content.append($('<a>').attr({href: message.url, target: '_blank'}).text(message.url));
     } else if (message.type == 'text') {
       $content.html(linkify(message.content));
     }

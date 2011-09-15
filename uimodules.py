@@ -35,6 +35,9 @@ class MessageItem(BaseUIModule):
           1200, 'GET', self.config.s3_bucket_name, thumbname)
       message.image_url = self.application.s3.generate_url(
           1200, 'GET', self.config.s3_bucket_name, message.s3_key)
+    elif message.type == 'file':
+      message.url = self.application.s3.generate_url(
+          1200, 'GET', self.config.s3_bucket_name, message.s3_key)
     elif message.type == 'text':
       pass
 

@@ -6,7 +6,9 @@
     {% if message.type == 'text' %}
       {{ message.content }}
     {% elif message.type == 'image' %}
-      <a href="{{ message.image_url }}"><img src="{{ message.thumbnail_url }}"></a>
+      <a href="{{ message.image_url }}" target="_blank"><img src="{{ message.thumbnail_url }}"></a>
+    {% elif message.type == 'file' %}
+      <a href="{{ message.url }}" target="_blank">{{ message.url }}</a>
     {% end %}
   </td>
 </tr>
