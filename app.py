@@ -37,10 +37,6 @@ define("config_file", default="app_config.yml", help="app_config file")
 
 class Model(dict):
   """Like tornado.web._O but does not whine for non-existent attributes"""
-  def __init__(self, it, *args, **kwds):
-    if it is not None:
-      super(Model, self).__init__(it, *args, **kwds)
-
   def __getattr__(self, name):
     try:
       return self[name]
