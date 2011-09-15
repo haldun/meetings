@@ -37,6 +37,10 @@ define("config_file", default="app_config.yml", help="app_config file")
 
 class Model(dict):
   """Like tornado.web._O but does not whine for non-existent attributes"""
+  def __init__(self, it, *args, **kwds):
+    if it is not None:
+      super(Model, self).__init__(it, *args, **kwds)
+
   def __getattr__(self, name):
     try:
       return self[name]
@@ -62,6 +66,7 @@ class Application(tornado.web.Application):
       url(r'/rooms/(?P<id>\w+)/delete', DeleteRoomHandler, name='delete_room'),
       url(r'/rooms/(?P<id>\w+)/invite', NewInvitationHandler, name='invite'),
       url(r'/rooms/(?P<id>\w+)/invitations', InvitationsHandler, name='invitations'),
+      url(r'/i', InvitationHandler, name='invitation'),
     ]
     settings = dict(
       debug=self.config.debug,
@@ -234,10 +239,8 @@ class RoomHandler(BaseHandler):
       'room': self.room._id,
       'type': {'$in': ['file', 'image']},
     }))
-    self.render('room.html',
-                room=self.room,
-                recent_messages=recent_messages,
-                files=files)
+    self.render(
+      'room.html', room=self.room, recent_messages=recent_messages, files=files)
 
 
 class NewMessageHandler(BaseHandler):
@@ -340,6 +343,32 @@ class InvitationsHandler(BaseHandler):
                 invitations=invitations,
                 room=self.room,
                 invitation_status=InvitationStatus)
+
+
+class InvitationHandler(BaseHandler):
+  def get(self):
+    token = self.get_argument('token')
+    invitation = Model(self.db.invitations.find_one({'token': token}))
+    if not invitation:
+      raise tornado.web.HTTPError(404)
+    if invitation.status == InvitationStatus.ACCEPTED:
+      raise tornado.web.HTTPError(404)
+    room = Model(self.db.rooms.find_one({'_id': invitation.room}))
+    if not room:
+      logging.error("No room for invitation %s" % invitation._id)
+      raise tornado.web.HTTPError(404)
+    if self.current_user:
+      room.members.append(self.current_user._id)
+      self.db.rooms.save(room)
+
+      invitation.status = InvitationStatus.ACCEPTED
+      invitation.accepted_by = self.current_user._id
+      invitation.accepted_at = datetime.datetime.utcnow()
+      self.invitations.save(invitation)
+
+      self.redirect(self.reverse_url('room', room._id))
+    else:
+      self.redirect(self.reverse_url('auth_google') + '?next=%s' % self.request.uri)
 
 
 def main():
