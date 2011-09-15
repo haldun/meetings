@@ -131,7 +131,7 @@ class BaseHandler(tornado.web.RequestHandler):
       if not self.current_user:
         self._rooms = []
       else:
-        self._rooms =(Model(r) for r in self.db.rooms.find({'members': self.current_user._id}))
+        self._rooms = [Model(r) for r in self.db.rooms.find({'members': self.current_user._id})]
     return self._rooms
 
 
