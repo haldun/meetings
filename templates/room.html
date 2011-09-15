@@ -15,10 +15,7 @@
 {% block footer %}
   <div id="footer">
     <div id="footer-content">
-      <form action="{{ reverse_url('new_message', room._id) }}" method="post" id="new_message">
-        <textarea id="text_content" name="content" placeholder="Type your message and hit enter..."></textarea>
-        {% raw xsrf_form_html() %}
-      </form>
+      {% module MessageComposer(room) %}
     </div>
   </div>
 {% end %}

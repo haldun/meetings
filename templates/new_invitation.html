@@ -1,0 +1,15 @@
+{% extends "app_base.html" %}
+
+{% block container %}
+<div class="container">
+  <h3>Invite Friends to {{ room.name }}</h3>
+  <br>
+  <form action="" method="post" class="room">
+    {% module Form(form) %}
+    <div class="actions">
+      <input type="submit" class="btn primary" value="Send Invite">
+      <a href="{{ reverse_url('home') }}" class="btn">Cancel</a>
+    </div>
+  </form>
+</div>
+{% end %}

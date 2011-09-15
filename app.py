@@ -16,7 +16,7 @@ import tornado.options
 import tornado.web
 
 from tornado.options import define, options
-from tornado.web import url, _O
+from tornado.web import url
 
 import hotqueue
 import pylibmc
@@ -25,7 +25,6 @@ import pymongo
 
 import boto.s3.connection
 from pymongo.objectid import ObjectId
-from PIL import Image
 
 # App imports
 import forms
@@ -36,8 +35,21 @@ import util
 define("port", default=8888, type=int)
 define("config_file", default="app_config.yml", help="app_config file")
 
+class Model(dict):
+  """Like tornado.web._O but does not whine for non-existent attributes"""
+  def __getattr__(self, name):
+    try:
+      return self[name]
+    except KeyError:
+      return None
+
+  def __setattr__(self, name, value):
+    self[name] = value
+
+
 class Application(tornado.web.Application):
   def __init__(self):
+    self.config = self._get_config()
     handlers = [
       url(r'/', IndexHandler, name='index'),
       url(r'/auth/google', GoogleAuthHandler, name='auth_google'),
@@ -48,6 +60,8 @@ class Application(tornado.web.Application):
       url(r'/rooms/(?P<id>\w+)/say', NewMessageHandler, name='new_message'),
       url(r'/rooms/(?P<id>\w+)/upload', UploadHandler, name='upload'),
       url(r'/rooms/(?P<id>\w+)/delete', DeleteRoomHandler, name='delete_room'),
+      url(r'/rooms/(?P<id>\w+)/invite', NewInvitationHandler, name='invite'),
+      url(r'/rooms/(?P<id>\w+)/invitations', InvitationsHandler, name='invitations'),
     ]
     settings = dict(
       debug=self.config.debug,
@@ -63,38 +77,21 @@ class Application(tornado.web.Application):
     self.db = self.connection[self.config.mongodb_database]
     self.upload_queue = hotqueue.HotQueue('upload', host='localhost', port=6379, db=0)
     # TODO create indexes here
-
-  @property
-  def config(self):
-    if not hasattr(self, '_config'):
-      logging.debug("Loading app config")
-      stream = file(options.config_file, 'r')
-      self._config = tornado.web._O(yaml.load(stream))
-    return self._config
-
-  @property
-  def memcache(self):
-    if not hasattr(self, '_memcache'):
-      self._memcache = pylibmc.Client(
-        self.config.memcache_servers,
-        binary=True, behaviors={"tcp_nodelay": True, "ketama": True})
-    return self._memcache
-
-  @property
-  def pubnub(self):
-    if not hasattr(self, '_pubnub'):
-      self._pubnub = pubnub.Pubnub(self.config.pubnub_publish_key,
-                                   self.config.pubnub_subscribe_key,
-                                   self.config.pubnub_secret_key,
-                                   self.config.pubnub_ssl_on)
-    return self._pubnub
-
-  @property
-  def s3(self):
-    if not hasattr(self, '_s3'):
-      self._s3 = boto.s3.connection.S3Connection(
+    self.memcache = pylibmc.Client(
+        self.config.memcache_servers, binary=True,
+        behaviors={"tcp_nodelay": True, "ketama": True})
+    self.pubnub = pubnub.Pubnub(self.config.pubnub_publish_key,
+                                self.config.pubnub_subscribe_key,
+                                self.config.pubnub_secret_key,
+                                self.config.pubnub_ssl_on)
+    self.s3 = boto.s3.connection.S3Connection(
         self.config.aws_access_key_id, self.config.aws_secret_access_key)
-    return self._s3
+
+  def _get_config(self):
+    stream = file(options.config_file, 'r')
+    config = Model(yaml.load(stream))
+    stream.close()
+    return config
 
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -125,7 +122,7 @@ class BaseHandler(tornado.web.RequestHandler):
     user = self.db.users.find_one({'_id': pymongo.objectid.ObjectId(user_id)})
     if user is None:
       return None
-    return _O(user)
+    return Model(user)
 
   @property
   def rooms(self):
@@ -133,7 +130,7 @@ class BaseHandler(tornado.web.RequestHandler):
       if not self.current_user:
         self._rooms = []
       else:
-        self._rooms =(_O(r) for r in self.db.rooms.find({'members': self.current_user._id}))
+        self._rooms =(Model(r) for r in self.db.rooms.find({'members': self.current_user._id}))
     return self._rooms
 
 
@@ -163,6 +160,7 @@ class GoogleAuthHandler(BaseHandler, tornado.auth.GoogleMixin):
     self.set_secure_cookie('user_id', str(user['_id']))
     self.redirect(self.reverse_url('home'))
 
+
 class LogoutHandler(BaseHandler):
   def get(self):
     self.clear_cookie('user_id')
@@ -172,7 +170,7 @@ class LogoutHandler(BaseHandler):
 class HomeHandler(BaseHandler):
   @tornado.web.authenticated
   def get(self):
-    rooms = list(_O(r) for r in self.db.rooms.find({'members': self.current_user._id}))
+    rooms = list(Model(r) for r in self.db.rooms.find({'members': self.current_user._id}))
     self.render('home.html', rooms=rooms)
 
 
@@ -186,7 +184,7 @@ class NewRoomHandler(BaseHandler):
   def post(self):
     form = forms.RoomForm(self)
     if form.validate():
-      room = _O(owner=self.current_user._id,
+      room = Model(owner=self.current_user._id,
                 admins=[self.current_user._id],
                 members=[self.current_user._id],
                 topic='')
@@ -205,10 +203,10 @@ def room_required(method):
       id = ObjectId(id)
     except:
       raise tornado.web.HTTPError(400)
-    room = self.db.rooms.find_one({'_id': ObjectId(id)})
+    room = self.db.rooms.find_one({'_id': id})
     if room is None:
       raise tornado.web.HTTPError(404)
-    room = _O(room)
+    room = Model(room)
     if self.current_user._id not in room.members:
       raise tornado.web.HTTPError(403)
     self.room = room
@@ -219,7 +217,8 @@ def room_required(method):
 def room_admin_required(method):
   @room_required
   def _wrapper(self, *args, **kwds):
-    if self.current_user._id != self.room.owner and self.current_user._id not in self.room.admins:
+    if self.current_user._id != self.room.owner and \
+       self.current_user._id not in self.room.admins:
       raise tornado.web.HTTPError(403)
     return method(self, *args, **kwds)
   return _wrapper
@@ -228,10 +227,10 @@ def room_admin_required(method):
 class RoomHandler(BaseHandler):
   @room_required
   def get(self):
-    recent_messages = (_O(m) for m in self.db.messages.find({
-      'room': self.room._id,
-    }))
-    files = (_O(m) for m in self.db.messages.find({
+    recent_messages = (
+      Model(m) for m in self.db.messages.find({'room': self.room._id,})
+    )
+    files = (Model(m) for m in self.db.messages.find({
       'room': self.room._id,
       'type': {'$in': ['file', 'image']},
     }))
@@ -274,6 +273,7 @@ class DeleteRoomHandler(BaseHandler):
     # TODO Remove s3 resources
     self.finish()
 
+
 class UploadHandler(BaseHandler):
   # Flash workaround here
   def initialize(self):
@@ -298,6 +298,49 @@ class UploadHandler(BaseHandler):
       'room_token': self.room.token,
     })
     self.write(dict(jsonrpc='2.0', result=None, id='id'))
+
+
+class InvitationStatus:
+  PENDING = 1
+  ACCEPTED = 2
+
+
+class NewInvitationHandler(BaseHandler):
+  @room_admin_required
+  def get(self):
+    form = forms.InvitationForm()
+    self.render('new_invitation.html', form=form, room=self.room)
+
+  @room_admin_required
+  def post(self):
+    form = forms.InvitationForm(self)
+    if form.validate():
+      token = util.generate_token(32)
+      invitation = {
+        'inviter': self.current_user._id,
+        'room': self.room._id,
+        'name': form.name.data,
+        'email': form.email.data,
+        'token': token,
+        'created_at': datetime.datetime.utcnow(),
+        'status': InvitationStatus.PENDING,
+      }
+      self.db.invitations.insert(invitation)
+      # TODO Send email here
+      self.redirect(self.reverse_url('room', self.room._id))
+    else:
+      self.render('new_invitation.html', form=form, room=self.room)
+
+
+class InvitationsHandler(BaseHandler):
+  @room_admin_required
+  def get(self):
+    invitations = (Model(i) for i in self.db.invitations.find({'room': self.room._id}))
+    self.render('invitations.html',
+                invitations=invitations,
+                room=self.room,
+                invitation_status=InvitationStatus)
+
 
 def main():
   tornado.options.parse_command_line()

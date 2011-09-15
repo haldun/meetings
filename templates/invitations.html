@@ -1,0 +1,40 @@
+{% extends "app_base.html" %}
+
+{% block container %}
+<div class="container">
+  <h2>Invitations for {{ room.name }}</h2>
+
+  <table class="zebra-striped">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Sent at</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="invitations">
+      {% for invitation in invitations %}
+        <tr class="invitation">
+          <td>{{ invitation.name }}</td>
+          <td>{{ invitation.email }}</td>
+          <td>{{ invitation.created_at }}</td>
+          <td>
+            {% if invitation.status == invitation_status.PENDING %}
+              pending
+            {% elif invitation.status == invitation_status.ACCEPTED %}
+              accepted
+            {% end %}
+          </td>
+          <td>
+            {% if invitation.status == invitation_status.PENDING %}
+              <a href="">Cancel</a>
+            {% end %}
+          </td>
+        </tr>
+      {% end %}
+    </tbody>
+  </table>
+</div>
+{% end %}

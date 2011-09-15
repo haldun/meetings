@@ -18,3 +18,8 @@ class BaseForm(Form):
 class RoomForm(BaseForm):
   name = TextField('Name', [Required()])
   topic = TextField('Topic')
+
+
+class InvitationForm(BaseForm):
+  name = TextField('Name')
+  email = TextField('Email', [Required()])

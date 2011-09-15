@@ -39,3 +39,14 @@ class MessageItem(BaseUIModule):
       pass
 
     return self.render_string('uimodules/message_item.html', message=message)
+
+
+class MessageComposer(BaseUIModule):
+  def render(self, room):
+    return self.render_string('uimodules/message_composer.html', room=room)
+
+  def javascript_files(self):
+    return ['javascripts/composer.js']
+
+  # def embedded_javascript(self):
+  #   return ''
