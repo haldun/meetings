@@ -26,6 +26,12 @@ class Form(tornado.web.UIModule):
     """docstring for render"""
     return self.render_string('uimodules/form.html', form=form)
 
+
+class Messages(BaseUIModule):
+  def render(self, messages):
+    return self.render_string('uimodules/messages.html', messages=messages)
+
+
 class MessageItem(BaseUIModule):
   def render(self, message):
     if message.type == 'image':
@@ -53,3 +59,17 @@ class MessageComposer(BaseUIModule):
 
   # def embedded_javascript(self):
   #   return ''
+
+class Files(BaseUIModule):
+  def render(self, files):
+    return self.render_string('uimodules/files.html', files=files)
+
+
+class Transcripts(BaseUIModule):
+  def render(self):
+    return self.render_string('uimodules/transcripts.html')
+
+
+class Settings(BaseUIModule):
+  def render(self):
+    return self.render_string('uimodules/settings.html')

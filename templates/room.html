@@ -24,20 +24,9 @@
   </div>
 
   <div class="content" id="content">
-    {% if not recent_messages %}
-      <div class="alert-message success" id="no-messages">
-        <a class="close" href="#">×</a>
-        <p>There are no messages in this room. Type the first message!</p>
-      </div>
+    {% block innercontent %}
+      {% module Messages(recent_messages) %}
     {% end %}
-
-    <table id="messages" class="zebra-striped">
-      <tbody>
-        {% for message in recent_messages %}
-          {% module MessageItem(message) %}
-        {% end %}
-      </tbody>
-    </table>
   </div>
 </div>
 
@@ -290,8 +279,11 @@
       if (didnt_changed) {
         return;
       }
-      event.value = initial_pathname + '/messages';
+      // if (event.value.indexOf('/messages') === -1) {
+      //   event.value = initial_pathname + '/messages';
+      // }
     }
+    console.log(event.value);
 
     $('#room-menu a').removeClass('active');
     $('#room-menu a[href*="' + event.value + '"]').addClass('active');
@@ -302,25 +294,6 @@
       }
     });
     didnt_changed = false;
-  })
-
-
-
-  //
-  // $.address.init(function(event) {
-  //   // console.log(event.value)
-  //   //     if (event.value === '/') {
-  //   //       return;
-  //   //     }
-  // });
-  //
-  // $('#room-menu a:not(.leave)').address(function(){
-  //   $('#room-menu a').removeClass('active');
-  //   $(this).addClass('active');
-  //   var parts = $(this).attr('href').split('/');
-  //   return parts[parts.length - 1];
-  // });
-
-
+  });
 </script>
 {% end %}

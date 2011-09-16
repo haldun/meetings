@@ -57,7 +57,7 @@ class Application(tornado.web.Application):
       url(r'/logout', LogoutHandler, name='logout'),
       url(r'/home', HomeHandler, name='home'),
       url(r'/new', NewRoomHandler, name='new'),
-      url(r'/rooms/(?P<id>\w+)', RoomHandler, name='room'),
+      url(r'/rooms/(?P<id>\w+)', ShowRoomHandler, name='room'),
       url(r'/rooms/(?P<id>\w+)/messages', MessagesHandler, name='messages'),
       url(r'/rooms/(?P<id>\w+)/files', FilesHandler, name='files'),
       url(r'/rooms/(?P<id>\w+)/transcripts', TranscriptsHandler, name='transcripts'),
@@ -145,6 +145,11 @@ class BaseHandler(tornado.web.RequestHandler):
       else:
         self._rooms = [Model(r) for r in self.db.rooms.find({'members': self.current_user._id})]
     return self._rooms
+
+  @property
+  def is_ajax(self):
+    return 'X-Requested-With' in self.request.headers and \
+           self.request.headers['X-Requested-With'] == 'XMLHttpRequest'
 
 
 class IndexHandler(BaseHandler):
@@ -239,20 +244,20 @@ def room_admin_required(method):
 
 
 class RoomHandler(BaseHandler):
+  def get_recent_messages(self):
+    return [Model(m) for m in self.db.messages.find({'room': self.room._id,})]
+
+  def get_current_users(self):
+    return (Model(user) for user in self.db.users.find(
+            {'_id': {'$in': list(self.room.current_users)}}))
+
+
+class ShowRoomHandler(RoomHandler):
   @room_required
   def get(self):
-    recent_messages = [
-      Model(m) for m in self.db.messages.find({'room': self.room._id,})
-    ]
-    files = (Model(m) for m in self.db.messages.find({
-      'room': self.room._id,
-      'type': {'$in': ['file', 'image']},
-    }))
-
     # Update current users list for the user
     if not self.room.current_users:
       self.room.current_users = []
-
     if self.current_user._id not in self.room.current_users:
       self.room.current_users.append(self.current_user._id)
       self.db.rooms.save(self.room)
@@ -266,32 +271,36 @@ class RoomHandler(BaseHandler):
       })
     self.render('room.html',
                 room=self.room,
-                recent_messages=recent_messages,
-                files=files,
+                recent_messages=self.get_recent_messages(),
                 current_users=self.get_current_users())
 
-  def get_current_users(self):
-    return (Model(user) for user in self.db.users.find(
-            {'_id': {'$in': list(self.room.current_users)}}))
 
-
-class MessagesHandler(BaseHandler):
+class MessagesHandler(RoomHandler):
   @room_required
   def get(self):
-    recent_messages = [
-      Model(m) for m in self.db.messages.find({'room': self.room._id,})
-    ]
-    self.render('messages.html', recent_messages=recent_messages)
+    if self.is_ajax:
+      self.write(self.ui['modules']['Messages'](messages=self.get_recent_messages()))
+    else:
+      self.render('messages.html',
+                  recent_messages=self.get_recent_messages(),
+                  room=self.room,
+                  current_users=self.get_current_users())
 
 
-class FilesHandler(BaseHandler):
+class FilesHandler(RoomHandler):
   @room_required
   def get(self):
     files = (Model(m) for m in self.db.messages.find({
       'room': self.room._id,
       'type': {'$in': ['file', 'image']},
     }))
-    self.render('files.html', files=files)
+    if self.is_ajax:
+      self.write(self.ui['modules']['Files'](files=files))
+    else:
+      self.render('files.html',
+                  files=files,
+                  room=self.room,
+                  current_users=self.get_current_users())
 
 
 class TranscriptsHandler(BaseHandler):
