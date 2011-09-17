@@ -73,3 +73,11 @@ class Transcripts(BaseUIModule):
 class Settings(BaseUIModule):
   def render(self, form):
     return self.render_string('uimodules/settings.html', form=form)
+
+
+class Invitations(BaseUIModule):
+  def render(self, invitations, invitation_status):
+    return self.render_string('uimodules/invitations.html',
+                              invitations=invitations,
+                              invitation_status=invitation_status)
+

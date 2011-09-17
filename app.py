@@ -430,6 +430,20 @@ class InvitationStatus:
   ACCEPTED = 2
 
 
+class InvitationsHandler(BaseRoomHandler):
+  @room_admin_required
+  def get(self):
+    invitations = (Model(i) for i in self.db.invitations.find({'room': self.room._id}))
+
+    if self.is_ajax:
+      self.write(self.ui['modules']['Invitations'](invitations=invitations,
+                                  invitation_status=InvitationStatus))
+    else:
+      self.render('invitations.html',
+                  invitations=invitations,
+                  invitation_status=InvitationStatus)
+
+
 class NewInvitationHandler(BaseHandler):
   @room_admin_required
   def get(self):
@@ -457,16 +471,6 @@ class NewInvitationHandler(BaseHandler):
       self.render('new_invitation.html', form=form, room=self.room)
 
 
-class InvitationsHandler(BaseHandler):
-  @room_admin_required
-  def get(self):
-    invitations = (Model(i) for i in self.db.invitations.find({'room': self.room._id}))
-    self.render('invitations.html',
-                invitations=invitations,
-                room=self.room,
-                invitation_status=InvitationStatus)
-
-
 class InvitationHandler(BaseHandler):
   def get(self):
     token = self.get_argument('token')
@@ -485,7 +489,7 @@ class InvitationHandler(BaseHandler):
       invitation.status = InvitationStatus.ACCEPTED
       invitation.accepted_by = self.current_user._id
       invitation.accepted_at = datetime.datetime.utcnow()
-      self.invitations.save(invitation)
+      self.db.invitations.save(invitation)
       self.redirect(self.reverse_url('room', room._id))
     else:
       self.redirect(self.reverse_url('auth_google') + '?next=%s' % self.request.uri)
