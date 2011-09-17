@@ -61,6 +61,8 @@ function getCookie(name) {
       $content.append($('<a>').attr({href: message.url, target: '_blank'}).text(message.url));
     } else if (message.type == 'text') {
       $content.html(linkify(message.content));
+    } else if (message.type == 'topic_changed') {
+      $content.text('changed topic to ' + message.content);
     }
 
     $tr.append($content);
@@ -96,6 +98,11 @@ function getCookie(name) {
 
       if (message.type == 'leave') {
         $('#user_' + message.user_id).fadeOut('slow').remove();
+      }
+
+      if (message.type === 'topic_changed') {
+        $('#topic').text(message.content);
+        $('#messages').append(messageToDom(message));
       }
     },
     connect: function() {}

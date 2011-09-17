@@ -71,5 +71,5 @@ class Transcripts(BaseUIModule):
 
 
 class Settings(BaseUIModule):
-  def render(self):
-    return self.render_string('uimodules/settings.html')
+  def render(self, form):
+    return self.render_string('uimodules/settings.html', form=form)

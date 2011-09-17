@@ -1,0 +1,9 @@
+<title>{{ room.name }} - Settings</title>
+<h3>Room Settings</h3>
+<form action="" method="post" class="room">
+  {% module Form(form) %}
+  <div class="actions">
+    <input type="submit" class="btn primary" value="Save">
+    <a href="{{ reverse_url('home') }}" class="btn">Cancel</a>
+  </div>
+</form>

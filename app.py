@@ -58,7 +58,7 @@ class Application(tornado.web.Application):
       url(r'/logout', LogoutHandler, name='logout'),
       url(r'/home', HomeHandler, name='home'),
       url(r'/new', NewRoomHandler, name='new'),
-      url(r'/rooms/(?P<id>\w+)/messages', MessagesHandler, name='room'),
+      url(r'/rooms/(?P<id>\w+)', MessagesHandler, name='room'),
       url(r'/rooms/(?P<id>\w+)/messages', MessagesHandler, name='messages'),
       url(r'/rooms/(?P<id>\w+)/files', FilesHandler, name='files'),
       url(r'/rooms/(?P<id>\w+)/transcripts', TranscriptsHandler, name='transcripts'),
@@ -245,7 +245,7 @@ def room_admin_required(method):
   return _wrapper
 
 
-class RoomHandler(BaseHandler):
+class BaseRoomHandler(BaseHandler):
   active_menu = 'messages'
 
   def get_current_users(self):
@@ -274,10 +274,10 @@ class RoomHandler(BaseHandler):
         }
       }
     })
-    return super(RoomHandler, self).render_string(template_name, **kwds)
+    return super(BaseRoomHandler, self).render_string(template_name, **kwds)
 
 
-class MessagesHandler(RoomHandler):
+class MessagesHandler(BaseRoomHandler):
   active_menu = 'messages'
 
   @room_required
@@ -289,7 +289,7 @@ class MessagesHandler(RoomHandler):
       self.render('messages.html', recent_messages=recent_messages)
 
 
-class FilesHandler(RoomHandler):
+class FilesHandler(BaseRoomHandler):
   active_menu = 'files'
 
   @room_required
@@ -304,7 +304,7 @@ class FilesHandler(RoomHandler):
       self.render('files.html', files=files)
 
 
-class TranscriptsHandler(RoomHandler):
+class TranscriptsHandler(BaseRoomHandler):
   active_menu = 'transcripts'
 
   @room_required
@@ -315,12 +315,34 @@ class TranscriptsHandler(RoomHandler):
       self.render('transcripts.html')
 
 
-class SettingsHandler(RoomHandler):
+class SettingsHandler(BaseRoomHandler):
   active_menu = 'settings'
 
   @room_admin_required
   def get(self):
-    self.write("settings")
+    form = forms.RoomForm(obj=self.room)
+    if self.is_ajax:
+      self.write(self.ui['modules']['Settings'](form=form))
+    else:
+      self.render('settings.html', form=form)
+
+  @room_admin_required
+  def post(self):
+    form = forms.RoomForm(self, obj=self.room)
+    if form.validate():
+      form.populate_obj(self.room)
+      self.db.rooms.save(self.room)
+      self.pubnub.publish({
+        'channel': self.room.token,
+        'message': {
+          'type': 'topic_changed',
+          'content': self.room.topic,
+          'user_name': self.current_user.name or self.current_user.email,
+        }
+      })
+      self.redirect(self.reverse_url('room', self.room._id))
+    else:
+      self.render('settings.html')
 
 
 class NewMessageHandler(BaseHandler):
