@@ -15,7 +15,7 @@
               <a href="#" class="dropdown-toggle">Rooms</a>
               <ul class="dropdown-menu">
                 {% for r in handler.rooms %}
-                  <li><a href="{{ reverse_url('room', r._id) }}">{{ r.name }}</a></li>
+                  <li><a href="{{ reverse_url('messages', r._id) }}">{{ r.name }}</a></li>
                 {% end %}
               </ul>
             </li>
@@ -44,8 +44,8 @@
 
   {% block footer %}{% end %}
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.3/jquery.min.js"></script>
-  <script src="/static/javascripts/app.js"></script>
   <div sub-key="{{ handler.config.pubnub_subscribe_key }}" ssl="off" id="pubnub"></div>
   <script src="http://cdn.pubnub.com/pubnub-3.1.min.js"></script>
   {% block scripts %}{% end %}
+  <script src="/static/javascripts/app.js"></script>
 {% end %}

@@ -10,6 +10,7 @@ import tempfile
 
 # Tornado imports
 import tornado.auth
+import tornado.escape
 import tornado.httpserver
 import tornado.ioloop
 import tornado.options
@@ -57,7 +58,7 @@ class Application(tornado.web.Application):
       url(r'/logout', LogoutHandler, name='logout'),
       url(r'/home', HomeHandler, name='home'),
       url(r'/new', NewRoomHandler, name='new'),
-      url(r'/rooms/(?P<id>\w+)', ShowRoomHandler, name='room'),
+      url(r'/rooms/(?P<id>\w+)/messages', MessagesHandler, name='room'),
       url(r'/rooms/(?P<id>\w+)/messages', MessagesHandler, name='messages'),
       url(r'/rooms/(?P<id>\w+)/files', FilesHandler, name='files'),
       url(r'/rooms/(?P<id>\w+)/transcripts', TranscriptsHandler, name='transcripts'),
@@ -176,7 +177,7 @@ class GoogleAuthHandler(BaseHandler, tornado.auth.GoogleMixin):
       }
       self.db.users.insert(user)
     self.set_secure_cookie('user_id', str(user['_id']))
-    self.redirect(self.reverse_url('home'))
+    self.redirect(self.get_argument('next', self.reverse_url('home')))
 
 
 class LogoutHandler(BaseHandler):
@@ -203,9 +204,10 @@ class NewRoomHandler(BaseHandler):
     form = forms.RoomForm(self)
     if form.validate():
       room = Model(owner=self.current_user._id,
-                admins=[self.current_user._id],
-                members=[self.current_user._id],
-                topic='')
+                   admins=[self.current_user._id],
+                   members=[self.current_user._id],
+                   topic='',
+                   current_users=[self.current_user._id])
       form.populate_obj(room)
       room.token = util.generate_token(32)
       self.db.rooms.insert(room)
@@ -244,50 +246,52 @@ def room_admin_required(method):
 
 
 class RoomHandler(BaseHandler):
-  def get_recent_messages(self):
-    return [Model(m) for m in self.db.messages.find({'room': self.room._id,})]
+  active_menu = 'messages'
 
   def get_current_users(self):
+    # users = self.room.current_users
     return (Model(user) for user in self.db.users.find(
             {'_id': {'$in': list(self.room.current_users)}}))
 
+  def is_admin(self):
+    return self.current_user._id in self.room.admins
 
-class ShowRoomHandler(RoomHandler):
-  @room_required
-  def get(self):
-    # Update current users list for the user
-    if not self.room.current_users:
-      self.room.current_users = []
-    if self.current_user._id not in self.room.current_users:
-      self.room.current_users.append(self.current_user._id)
-      self.db.rooms.save(self.room)
-    self.pubnub.publish({
-        'channel': self.room.token,
-        'message': {
-          'type': 'presence',
-          'user_id': str(self.current_user._id),
-          'user_name': self.current_user.name or self.current_user.email,
+  def render_string(self, template_name, **kwds):
+    kwds.update({
+      'room': self.room,
+      'current_users': self.get_current_users(),
+      'active_menu': self.active_menu,
+      'is_admin': self.current_user._id in self.room.admins,
+      'js_context': {
+        'active_menu': self.active_menu,
+        'current_user': {
+          'id': str(self.current_user._id),
+          'name': self.current_user.name or self.current_user.email,
+        },
+        'room': {
+          'id': str(self.room._id),
+          'token': self.room.token
         }
-      })
-    self.render('room.html',
-                room=self.room,
-                recent_messages=self.get_recent_messages(),
-                current_users=self.get_current_users())
+      }
+    })
+    return super(RoomHandler, self).render_string(template_name, **kwds)
 
 
 class MessagesHandler(RoomHandler):
+  active_menu = 'messages'
+
   @room_required
   def get(self):
+    recent_messages = [Model(m) for m in self.db.messages.find({'room': self.room._id,})]
     if self.is_ajax:
-      self.write(self.ui['modules']['Messages'](messages=self.get_recent_messages()))
+      self.write(self.ui['modules']['Messages'](messages=recent_messages))
     else:
-      self.render('messages.html',
-                  recent_messages=self.get_recent_messages(),
-                  room=self.room,
-                  current_users=self.get_current_users())
+      self.render('messages.html', recent_messages=recent_messages)
 
 
 class FilesHandler(RoomHandler):
+  active_menu = 'files'
+
   @room_required
   def get(self):
     files = (Model(m) for m in self.db.messages.find({
@@ -297,19 +301,23 @@ class FilesHandler(RoomHandler):
     if self.is_ajax:
       self.write(self.ui['modules']['Files'](files=files))
     else:
-      self.render('files.html',
-                  files=files,
-                  room=self.room,
-                  current_users=self.get_current_users())
+      self.render('files.html', files=files)
 
 
-class TranscriptsHandler(BaseHandler):
+class TranscriptsHandler(RoomHandler):
+  active_menu = 'transcripts'
+
   @room_required
   def get(self):
-    self.write("transcripts")
+    if self.is_ajax:
+      self.write(self.ui['modules']['Transcripts']())
+    else:
+      self.render('transcripts.html')
 
 
-class SettingsHandler(BaseHandler):
+class SettingsHandler(RoomHandler):
+  active_menu = 'settings'
+
   @room_admin_required
   def get(self):
     self.write("settings")

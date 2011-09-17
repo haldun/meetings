@@ -54,8 +54,8 @@ class MessageComposer(BaseUIModule):
   def render(self, room):
     return self.render_string('uimodules/message_composer.html', room=room)
 
-  def javascript_files(self):
-    return ['javascripts/composer.js']
+  # def javascript_files(self):
+  #   return ['javascripts/composer.js']
 
   # def embedded_javascript(self):
   #   return ''
