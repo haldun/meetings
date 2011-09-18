@@ -130,8 +130,15 @@ function getCookie(name) {
     var code = (e.keyCode ? e.keyCode : e.which);
     if (code === 13) {
       e.preventDefault();
-      if ($(this).val() !== '') {
-        $form.submit();
+
+      if (uploader.total.queued > 0) {
+        uploader.start();
+        $(this).val('');
+        // uploader.files = [];
+      } else {
+        if ($(this).val() !== '') {
+          $form.submit();
+        }
       }
     }
   });
@@ -215,8 +222,7 @@ function getCookie(name) {
 
 
   // Uploader
-  (function(){
-    var uploader = new plupload.Uploader({
+  window.uploader = new plupload.Uploader({
       runtimes: 'html5,flash',
       browse_button: 'select_files',
       container: 'upload_container',
@@ -228,20 +234,25 @@ function getCookie(name) {
       multipart_params: {
         '_xsrf': getCookie('_xsrf'),
         'auth_token': getCookie('auth_token')
-      }
+      },
+      drop_element: 'text_content'
     });
 
     uploader.bind('Init', function(up, params) {});
 
     uploader.bind('FilesAdded', function(up, files) {
+      var val = $('#text_content').val();
       $.each(files, function(i, file) {
-        $('#filelist').append(
-          $('<div>').attr('id', file.id).text(
-              file.name + ' (' + plupload.formatSize(file.size) + ')')
-          .append('<b>')
-        );
+        val += file.name + ' ' + plupload.formatSize(file.size) + '\n';
+        // $('#filelist').append(
+        //   $('<div>').attr('id', file.id).text(
+        //       file.name + ' (' + plupload.formatSize(file.size) + ')')
+        //   .append('<b>')
+        // );
       });
+      $('#text_content').val(val);
       up.refresh();
+      $('#upload_buttons').show();
     });
 
     uploader.bind('UploadProgress', function(up, file) {
@@ -259,16 +270,18 @@ function getCookie(name) {
     });
 
     uploader.bind('FileUploaded', function(up, file) {
-      $('#' + file.id + " b").html("100%");
+      // $('#' + file.id + " b").html("100%");
+      $('#upload').text('Upload files').removeClass('disabled').hide();
     });
 
     $('#upload').click(function(e) {
       uploader.start();
+      $compose.val('');
+      $(this).text('Uploading...').addClass('disabled');
       e.preventDefault();
     });
 
     uploader.init();
-  })();
 
   $('#room-menu a').pjax('#content').live('click', function(){
     $('#room-menu a').removeClass('active');

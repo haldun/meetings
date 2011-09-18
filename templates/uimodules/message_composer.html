@@ -1,17 +1,22 @@
 <div class="row">
-  <div class="span10 columns">
+  <div class="span12">
     <form action="{{ reverse_url('new_message', room._id) }}" method="post" id="new_message">
       <textarea id="text_content" name="content"
-                placeholder="Type your message and hit enter..."></textarea>
+                placeholder="Type your message or drop your files here and hit enter..."></textarea>
 
       {% raw xsrf_form_html() %}
     </form>
   </div>
-  <div class="span4 columns">
-    <div id="upload_container" style="float:right">
-      <div id="filelist" style="display:none"></div>
-      <a href="#" id="select_files" class="btn">Select files</a>
-      <a href="#" id="upload" class="btn primary">Upload files</a>
+  <div class="span4">
+    <div id="upload_container">
+      <!--<div id="filedrop" style="border:1px solid red; padding:10px">
+        Drop files here
+      </div>-->
+      <div id="filelist"></div>
+      <div id="upload_buttons" style="display:none">
+        <a href="#" id="select_files" class="btn" style="display:none">Select files</a>
+        <a href="#" id="upload" class="btn primary">Upload files</a>
+      </div>
     </div>
   </div>
 </div>

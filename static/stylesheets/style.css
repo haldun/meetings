@@ -12,12 +12,12 @@ body div.header{height:120px;background:#575EFF;background:-moz-linear-gradient(
 div.header h1{color:#fff;line-height:120px;}
 div.index{margin-top:20px;}
 div.header h1{font-size:48px;}
-div#footer{padding:0px;position:absolute;bottom:0;left:0;width:100%;height:70px;background-color:#D6DAFF;border-top:1px solid #e5e5e5;}
+div#footer{padding:0px;position:absolute;bottom:0;left:0;width:100%;height:90px;background-color:#D6DAFF;border-top:1px solid #e5e5e5;}
 div#footer-content{padding:10px;}
 @media screen{body>div#header{position:fixed;}
 body>div#footer{position:fixed;}
 }
-#text_content{width:600px;height:40px;}
+#text_content{width:100%;height:60px;}
 #messages .user{width:20%}
 .room-heading{position:fixed;top:40px;height:90px;background:#fff;margin:0;padding:0;}
 .room-heading h3{margin-bottom:10px;}
