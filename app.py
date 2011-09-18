@@ -297,7 +297,7 @@ class FilesHandler(BaseRoomHandler):
     files = (Model(m) for m in self.db.messages.find({
       'room': self.room._id,
       'type': {'$in': ['file', 'image']},
-    }))
+    }).sort('created_at', pymongo.DESCENDING))
     if self.is_ajax:
       self.write(self.ui['modules']['Files'](files=files))
     else:

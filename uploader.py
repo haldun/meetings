@@ -83,6 +83,7 @@ class Uploader(object):
       key.set_metadata('Content-Type', mime_type)
 
     file = open(filepath)
+    filesize = os.path.getsize(filepath)
     key.set_contents_from_file(file)
     file.close()
     os.remove(filepath)
@@ -114,6 +115,12 @@ class Uploader(object):
     if message_type == 'image':
       message['size'] = im.size
       message['s3_thumbnail_key'] = thumb_key.key
+      message['thumb_size'] = thumbnail.size
+
+    if mime_type:
+      message['mime_type'] = mime_type
+
+    message['filesize'] = filesize
 
     message_id = self.db.messages.insert(message)
 

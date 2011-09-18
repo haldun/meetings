@@ -1,0 +1,14 @@
+<tr>
+  <td>
+    {% if file.type == 'image' %}
+    <a href="{{ file.url }}" target="_blank">
+      <img src="{{ file.thumbnail_url }}" width="{{ file.thumb_size[0] }}" height="{{ file.thumb_size[1] }}">
+    </a>
+    {% end %}
+    <br>
+    {{ file.filename }} ({{ file.filesize }} bytes)</td>
+  <td>{{ file.user_name }}</td>
+  <td>
+    <a href="{{ file.url }}" target="_blank">Download</a>
+  </td>
+</tr>

@@ -81,3 +81,17 @@ class Invitations(BaseUIModule):
                               invitations=invitations,
                               invitation_status=invitation_status)
 
+
+class FileItem(BaseUIModule):
+  def render(self, file):
+    if file.type == 'image':
+      name, ext = os.path.splitext(file.s3_key)
+      thumbname = '%s_thumb%s'% (name, ext)
+      file.thumbnail_url = self.application.s3.generate_url(
+          1200, 'GET', self.config.s3_bucket_name, thumbname)
+      file.url = self.application.s3.generate_url(
+          1200, 'GET', self.config.s3_bucket_name, file.s3_key)
+    elif file.type == 'file':
+      file.url = self.application.s3.generate_url(
+          1200, 'GET', self.config.s3_bucket_name, file.s3_key)
+    return self.render_string('uimodules/file_item.html', file=file)

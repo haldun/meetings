@@ -1,11 +1,15 @@
 <title>{{ room.name }} - Files</title>
-<h3>Files</h3>
 <table id="files" class="zebra-striped">
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>Uploaded by</th>
+      <th></th>
+    </tr>
+  </thead>
   <tbody>
     {% for file in files %}
-    <tr>
-      <td>{{ file.filename }}</td>
-    </tr>
+      {% module FileItem(file) %}
     {% end %}
   </tbody>
 </table>

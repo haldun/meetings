@@ -24,3 +24,4 @@ class RoomForm(BaseForm):
 class InvitationForm(BaseForm):
   name = TextField('Name')
   email = TextField('Email', [Required()])
+
