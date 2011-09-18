@@ -45,7 +45,7 @@
 {% end %}
 
 {% block scripts %}
-<script src="{{ static_url('javascripts/plupload.full.js') }}"></script>
-<script src="{{ static_url('javascripts/jquery.pjax.js') }}"></script>
+<script src="/static/javascripts/plupload.full.js"></script>
+<script src="/static/javascripts/jquery.pjax.js"></script>
 <script>window.M = {% raw json_encode(js_context) %};</script>
 {% end %}
