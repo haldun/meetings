@@ -1,3 +1,4 @@
+body{color:#444}
 body.app{padding:85px 0px 80px 0px;}
 * html body{overflow:hidden;}
 * html div#content{height:100%;overflow:auto;}

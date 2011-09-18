@@ -298,7 +298,8 @@ function getCookie(name) {
       el.innerHTML = linkify(el.innerHTML);
     });
     $compose.focus();
-    setTimeout(scroll_page, 50);
-
+    if ($('#messages').length > 0) {
+      setTimeout(scroll_page, 50);
+    }
   });
 })();
