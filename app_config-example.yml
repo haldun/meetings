@@ -11,3 +11,5 @@ pubnub_ssl_on: False
 aws_access_key_id: AKIAJLDMFGCYJXLHWTMQ
 aws_secret_access_key: 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
 s3_bucket_name: hb-meetings-dev
+mail_user: info@getmeetingsapp.com
+mail_pwd:

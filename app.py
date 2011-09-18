@@ -86,6 +86,7 @@ class Application(tornado.web.Application):
     # TODO Configurable settings for redis
     self.redis = redis.Redis(host='localhost', port=6379, db=0)
     self.upload_queue = hotqueue.HotQueue('upload', host='localhost', port=6379, db=0)
+    self.mail_queue = hotqueue.HotQueue('mail', host='localhost', port=6379, db=0)
     # TODO create indexes here
     self.memcache = pylibmc.Client(
         self.config.memcache_servers, binary=True,
@@ -469,7 +470,24 @@ class NewInvitationHandler(BaseHandler):
         'status': InvitationStatus.PENDING,
       }
       self.db.invitations.insert(invitation)
-      # TODO Send email here
+      self.application.mail_queue.put({
+        'to': form.email.data,
+        'subject': 'Meetings invitation from %s' % self.current_user.name,
+        'text': '''
+Hi, %(receiver)s
+
+%(sender)s invites you to %(room)s. Click the following link to accept this
+invitation.
+
+%(invitation_link)s
+        ''' % {
+        'receiver': form.name.data,
+        'sender': self.current_user.name,
+        'room': self.room.name,
+        'invitation_link': self.request.protocol + "://" + self.request.host +
+                           self.reverse_url('invitation') + '?token=' + token
+        }
+      })
       self.redirect(self.reverse_url('room', self.room._id))
     else:
       self.render('new_invitation.html', form=form, room=self.room)
