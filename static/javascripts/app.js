@@ -75,7 +75,7 @@ function getCookie(name) {
   PUBNUB.subscribe({
     channel: M.room.token,
     error: function() {
-      alert("Connection lost.");
+      // alert("Connection lost.");
     },
     callback: function(message) {
       if (message.type == 'image' || message.type == 'file') {
