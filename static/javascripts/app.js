@@ -199,6 +199,11 @@ function getCookie(name) {
   };
 
 
+  function thumbinize(s){
+   return format('<a href="{0}" target="_blank"><img src="{0}" class="thumbnail" alt="{0}"></a>', s);
+  };
+
+
   function youtubeVideoEmbedder(url){
    var width = 300;
    var height = 200;
