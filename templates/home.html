@@ -23,19 +23,7 @@
     </thead>
     <tbody id="rooms">
       {% for room in rooms %}
-        <tr class="room">
-          <td width="50%">
-            <h3>
-              <a href="{{ reverse_url('room', room._id) }}">{{ room.name }}</a>
-              <small>{{ room.topic }}</small>
-            </h3>
-          </td>
-          <td>
-            <a href="{{ reverse_url('invite', room._id) }}" class="btn primary">Invite Friend</a>
-            <a href="{{ reverse_url('invitations', room._id) }}" class="btn">Show Invitations</a>
-            <a class="btn danger" href="" data-room="{{ room._id }}">Delete Room</a>
-          </td>
-        </tr>
+        {% module RoomItem(room) %}
       {% end %}
     </tbody>
   </table>

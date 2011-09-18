@@ -95,3 +95,9 @@ class FileItem(BaseUIModule):
       file.url = self.application.s3.generate_url(
           1200, 'GET', self.config.s3_bucket_name, file.s3_key)
     return self.render_string('uimodules/file_item.html', file=file)
+
+
+class RoomItem(BaseUIModule):
+  def render(self, room):
+    is_admin = self.handler.current_user._id in room.admins
+    return self.render_string('uimodules/room_item.html', room=room, is_admin=is_admin)
