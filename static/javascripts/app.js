@@ -253,6 +253,7 @@ function getCookie(name) {
       $('#text_content').val(val);
       up.refresh();
       $('#upload_buttons').show();
+      $('#upload').show();
     });
 
     uploader.bind('UploadProgress', function(up, file) {
