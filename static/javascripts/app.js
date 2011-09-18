@@ -108,10 +108,6 @@ function getCookie(name) {
     connect: function() {}
   });
 
-  $('#messages').find('tr.text td').each(function(i, el) {
-    el.innerHTML = linkify(el.innerHTML);
-  });
-
   $form.submit(function(e){
     var $this = $(this), url = $this.attr('action');
     $('#messages').append(messageToDom({
@@ -147,6 +143,9 @@ function getCookie(name) {
     $('html, body').animate({scrollTop: $(document).height()}, 'slow');
   };
 
+  $('#messages').find('tr.text td').each(function(i, el) {
+    el.innerHTML = linkify(el.innerHTML);
+  });
   $compose.focus();
   setTimeout(scroll_page, 50);
 
@@ -295,5 +294,11 @@ function getCookie(name) {
   })
 
   $(document.body).bind('end.pjax', function(xhr){
+    $('#messages').find('tr.text td').each(function(i, el) {
+      el.innerHTML = linkify(el.innerHTML);
+    });
+    $compose.focus();
+    setTimeout(scroll_page, 50);
+
   });
 })();
