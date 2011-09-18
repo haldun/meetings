@@ -4,6 +4,7 @@ import mimetypes
 import os
 import tempfile
 from cStringIO import StringIO
+import sys
 
 import boto.s3.key
 import boto.s3.connection
@@ -37,6 +38,12 @@ class Uploader(object):
 
   @queue.worker
   def run(self, item):
+    try:
+      self.process_item(item)
+    except:
+      print sys.exc_info()
+
+  def process_item(self, item):
     filepath = item['file']
     filename = item['filename']
     room_id = item['room_id']
