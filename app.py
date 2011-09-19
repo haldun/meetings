@@ -43,10 +43,14 @@ class Model(dict):
     try:
       return self[name]
     except KeyError:
+      print name
       return None
 
   def __setattr__(self, name, value):
     self[name] = value
+
+  def __getattribute__(self, name):
+    return super(Model, self).__getattribute__(name)
 
 
 class Application(tornado.web.Application):
@@ -225,7 +229,14 @@ def room_required(method):
       id = ObjectId(id)
     except:
       raise tornado.web.HTTPError(400)
-    room = self.db.rooms.find_one({'_id': id})
+    cache_key = 'rooms/%s' % id
+    room = self.memcache.get(cache_key)
+    if room is None:
+      room = self.db.rooms.find_one({'_id': id})
+      if room:
+        self.memcache.set(cache_key, Model(room).items())
+    else:
+      room = Model(room)
     if room is None:
       raise tornado.web.HTTPError(404)
     room = Model(room)
@@ -336,6 +347,7 @@ class MessagesHandler(BaseRoomHandler):
       elif message.type == 'text':
         pass
 
+
 class FilesHandler(BaseRoomHandler):
   active_menu = 'files'
 
@@ -398,6 +410,7 @@ class SettingsHandler(BaseRoomHandler):
     if form.validate():
       form.populate_obj(self.room)
       self.db.rooms.save(self.room)
+      self.memcache.set('rooms/%s' % self.room._id, self.room.items())
       self.pubnub.publish({
         'channel': self.room.token,
         'message': {
@@ -461,6 +474,7 @@ class DeleteRoomHandler(BaseHandler):
   def post(self):
     self.db.rooms.remove({'_id': self.room._id})
     self.db.messages.remove({'room': self.room._id})
+    self.memcache.delete('rooms/%s' % self.room._id)
     # TODO Remove s3 resources
     self.finish()
 
