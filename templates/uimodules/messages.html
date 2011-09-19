@@ -9,7 +9,23 @@
 <table id="messages" class="zebra-striped">
   <tbody>
     {% for message in messages %}
-      {% module MessageItem(message) %}
+      <tr class="message {{ message.type }}">
+        <td class="user">
+          {{ message.user_name }}
+        </td>
+        <td>
+          {% if message.type == 'text' %}
+            {{ message.content }}
+          {% elif message.type == 'image' %}
+            <a href="{{ message.image_url }}" target="_blank"><img
+              src="{{ message.thumbnail_url }}"
+              width="{{ message.thumb_size[0] }}"
+              height="{{ message.thumb_size[1] }}"></a>
+          {% elif message.type == 'file' %}
+            <a href="{{ message.url }}" target="_blank">{{ message.url }}</a>
+          {% end %}
+        </td>
+      </tr>
     {% end %}
   </tbody>
 </table>

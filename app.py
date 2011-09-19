@@ -299,14 +299,15 @@ class MessagesHandler(BaseRoomHandler):
 
   @room_required
   def get(self):
-    recent_messages = [
+    recent_messages = reversed([
       Model(m) for m in self.db.messages.find({'room': self.room._id,}) \
-                               .sort('created_at', -1).limit(500).sort('created_at', 1)
-    ]
+                               .sort('created_at', -1)
+                               .limit(100)]
+    )
     if self.is_ajax:
-      self.write(self.ui['modules']['Messages'](messages=recent_messages))
+      self.render('uimodules/messages.html', messages=recent_messages)
     else:
-      self.render('messages.html', recent_messages=recent_messages)
+      self.render('messages.html', messages=recent_messages)
 
 
 class FilesHandler(BaseRoomHandler):
