@@ -270,7 +270,7 @@ class BaseRoomHandler(BaseHandler):
     if self.current_user._id not in self.room.current_users:
       self.room.current_users.append(self.current_user._id)
       self.db.rooms.save(self.room)
-
+      self.memcache.set('rooms/%s' % self.room._id, self.room.items())
       self.pubnub.publish({
         'channel': self.room.token,
         'message': {
@@ -457,6 +457,7 @@ class LeaveRoomHandler(BaseHandler):
       try:
         self.room.current_users.remove(self.current_user._id)
         self.db.rooms.save(self.room)
+        self.memcache.set('rooms/%s' % self.room._id, self.room.items())
         self.pubnub.publish({
           'channel': self.room.token,
           'message': {
@@ -584,6 +585,7 @@ class InvitationHandler(BaseHandler):
     if self.current_user:
       room.members.append(self.current_user._id)
       self.db.rooms.save(room)
+      self.memcache.set('rooms/%s' % room._id, room.items())
       invitation.status = InvitationStatus.ACCEPTED
       invitation.accepted_by = self.current_user._id
       invitation.accepted_at = datetime.datetime.utcnow()
