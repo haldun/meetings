@@ -3,6 +3,7 @@ import sys
 import smtplib
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
+from email.header import Header
 
 import hotqueue
 import yaml
@@ -47,8 +48,8 @@ class Mailer(object):
     msg = MIMEMultipart()
     msg['From'] = mail_user
     msg['To'] = to
-    msg['Subject'] = subject
-    msg.attach(MIMEText(text))
+    msg['Subject'] = Header(subject, 'utf-8')
+    msg.attach(MIMEText(text.encode('utf-8')))
 
     server = smtplib.SMTP('smtp.gmail.com', 587)
     server.ehlo()
