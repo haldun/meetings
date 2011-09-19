@@ -164,8 +164,11 @@ function getCookie(name) {
   $('#messages').find('tr.text td').each(function(i, el) {
     el.innerHTML = linkify(el.innerHTML);
   });
+
+  if ($('#messages').length > 0) {
+    setTimeout(scroll_page, 50);
+  }
   $compose.focus();
-  setTimeout(scroll_page, 50);
 
   var getCookie = function(name) {
     var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");

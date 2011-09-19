@@ -62,8 +62,8 @@ class Files(BaseUIModule):
 
 
 class Transcripts(BaseUIModule):
-  def render(self):
-    return self.render_string('uimodules/transcripts.html')
+  def render(self, date=None, messages=None):
+    return self.render_string('uimodules/transcripts.html', date=date, messages=messages)
 
 
 class Settings(BaseUIModule):

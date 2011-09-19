@@ -1,3 +1,4 @@
+import datetime
 import hashlib
 import os
 
@@ -6,6 +7,37 @@ def md5(s):
 
 def generate_token(length=32):
   return os.urandom(length).encode('hex')
+
+# Datetime utils
+def daterange(start_date, end_date):
+  for n in range((end_date - start_date).days + 1):
+    yield start_date + datetime.timedelta(n)
+
+def hours(date):
+  for n in range(0, 24):
+    yield date + datetime.timedelta(hours=n)
+
+def start_of_day(date):
+  return datetime.datetime(*date.timetuple()[0:3])
+
+def start_of_tomorrow(date):
+  return start_of_day(date + datetime.timedelta(days=1))
+
+def start_of_hour(date):
+  return datetime.datetime(*date.timetuple()[0:4])
+
+def start_of_month(date):
+  return datetime.datetime(*list(date.timetuple()[:2]) + [1])
+
+def last_day_of_month(date):
+  date = start_of_month(date)
+  if date.month == 12:
+    return date.replace(day=31)
+  return date.replace(month=date.month+1, day=1) - datetime.timedelta(days=1)
+
+def start_of_next_month(date):
+  return last_day_of_month(date) + datetime.timedelta(days=1)
+
 
 # Copied from django with some modifications
 import copy

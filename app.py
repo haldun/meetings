@@ -62,6 +62,7 @@ class Application(tornado.web.Application):
       url(r'/rooms/(?P<id>\w+)/messages', MessagesHandler, name='messages'),
       url(r'/rooms/(?P<id>\w+)/files', FilesHandler, name='files'),
       url(r'/rooms/(?P<id>\w+)/transcripts', TranscriptsHandler, name='transcripts'),
+      url(r'/rooms/(?P<id>\w+)/transcripts/(?P<date>.+)', TranscriptsHandler, name='transcripts_by_date'),
       url(r'/rooms/(?P<id>\w+)/settings', SettingsHandler, name='settings'),
       url(r'/rooms/(?P<id>\w+)/say', NewMessageHandler, name='new_message'),
       url(r'/rooms/(?P<id>\w+)/upload', UploadHandler, name='upload'),
@@ -354,11 +355,30 @@ class TranscriptsHandler(BaseRoomHandler):
   active_menu = 'transcripts'
 
   @room_required
-  def get(self):
-    if self.is_ajax:
-      self.write(self.ui['modules']['Transcripts']())
+  def get(self, date=None):
+    if date is None:
+      date = util.start_of_day(datetime.datetime.today())
     else:
-      self.render('transcripts.html')
+      try:
+        date = datetime.datetime.strptime(date, '%Y/%m/%d')
+      except:
+        date = util.start_of_day(datetime.datetime.today())
+
+    start = date
+    end = util.start_of_tomorrow(start)
+
+    messages = [Model(m) for m in self.db.messages.find({
+      'room': self.room._id,
+      'created_at': {
+        '$gte': start,
+        '$lte': end
+      }
+    }).sort('created_at', 1)]
+
+    if self.is_ajax:
+      self.render('uimodules/transcripts.html', date=date, messages=messages)
+    else:
+      self.render('transcripts.html', date=date, messages=messages)
 
 
 class SettingsHandler(BaseRoomHandler):
