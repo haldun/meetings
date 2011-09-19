@@ -309,7 +309,7 @@ function getCookie(name) {
 
     uploader.init();
 
-  $('#room-menu a').pjax('#content').live('click', function(){
+  $('#room-menu a:not(.leave)').pjax('#content').live('click', function(){
     $('#room-menu a').removeClass('active');
     $(this).addClass('active');
   })

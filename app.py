@@ -62,7 +62,8 @@ class Application(tornado.web.Application):
       url(r'/rooms/(?P<id>\w+)/messages', MessagesHandler, name='messages'),
       url(r'/rooms/(?P<id>\w+)/files', FilesHandler, name='files'),
       url(r'/rooms/(?P<id>\w+)/transcripts', TranscriptsHandler, name='transcripts'),
-      url(r'/rooms/(?P<id>\w+)/transcripts/(?P<date>.+)', TranscriptsHandler, name='transcripts_by_date'),
+      url(r'/rooms/(?P<id>\w+)/transcripts/(?P<date>.+)', TranscriptsHandler,
+          name='transcripts_by_date'),
       url(r'/rooms/(?P<id>\w+)/settings', SettingsHandler, name='settings'),
       url(r'/rooms/(?P<id>\w+)/say', NewMessageHandler, name='new_message'),
       url(r'/rooms/(?P<id>\w+)/upload', UploadHandler, name='upload'),
@@ -196,7 +197,8 @@ class LogoutHandler(BaseHandler):
 class HomeHandler(BaseHandler):
   @tornado.web.authenticated
   def get(self):
-    rooms = list(Model(r) for r in self.db.rooms.find({'members': self.current_user._id}))
+    rooms = list(
+      Model(r) for r in self.db.rooms.find({'members': self.current_user._id}))
     self.render('home.html', rooms=rooms)
 
 
@@ -263,10 +265,8 @@ class BaseRoomHandler(BaseHandler):
   active_menu = 'messages'
 
   def get_current_users(self):
-    # users = self.room.current_users
     if not self.room.current_users:
       self.room.current_users = []
-
     if self.current_user._id not in self.room.current_users:
       self.room.current_users.append(self.current_user._id)
       self.db.rooms.save(self.room)
@@ -279,7 +279,6 @@ class BaseRoomHandler(BaseHandler):
           'user_name': self.current_user.name or self.current_user.email
         }
       })
-
     return [Model(user) for user in self.db.users.find(
             {'_id': {'$in': list(self.room.current_users)}})]
 
@@ -345,8 +344,6 @@ class MessagesHandler(BaseRoomHandler):
       elif message.type == 'file':
         message.url = self.application.s3.generate_url(
             1200, 'GET', self.config.s3_bucket_name, message.s3_key)
-      elif message.type == 'text':
-        pass
 
 
 class FilesHandler(BaseRoomHandler):
