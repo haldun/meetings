@@ -53,17 +53,21 @@ function getCookie(name) {
 
     var $content = $('<td>');
 
-    if (message.type == 'image') {
+    if (message.type === 'image') {
       var $a = $('<a>').attr({href: message.url, target: '_blank'});
       $a.append($('<img>').attr('src', message.thumb_url));
       $content.append($a);
-    } else if (message.type == 'file') {
+    } else if (message.type === 'file') {
       $content.append($('<a>').attr({href: message.url, target: '_blank'}).text(message.url));
-    } else if (message.type == 'text') {
+    } else if (message.type === 'text') {
       $content.text(message.content);
       // $content.html(linkify(message.content));
-    } else if (message.type == 'topic_changed') {
+    } else if (message.type === 'topic_changed') {
       $content.text('changed topic to ' + message.content);
+    } else if (message.type === 'presence') {
+      $content.text('entered the room');
+    } else if (message.type === 'leave') {
+      $content.text('left the room');
     }
 
     $tr.append($content);
@@ -94,11 +98,13 @@ function getCookie(name) {
         if ($('#' + id).length === 0) {
           var el = $('<li>').attr('id', id).text(message.user_name);
           $('#room-users').append(el);
+          $('#messages').append(messageToDom(message));
         }
       }
 
-      if (message.type == 'leave') {
+      if (message.type === 'leave') {
         $('#user_' + message.user_id).fadeOut('slow').remove();
+        $('#messages').append(messageToDom(message));
       }
 
       if (message.type === 'topic_changed') {

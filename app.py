@@ -251,6 +251,22 @@ class BaseRoomHandler(BaseHandler):
 
   def get_current_users(self):
     # users = self.room.current_users
+    if not self.room.current_users:
+      self.room.current_users = []
+
+    if self.current_user._id not in self.room.current_users:
+      self.room.current_users.append(self.current_user._id)
+      self.db.rooms.save(self.room)
+
+      self.pubnub.publish({
+        'channel': self.room.token,
+        'message': {
+          'type': 'presence',
+          'user_id': str(self.current_user._id),
+          'user_name': self.current_user.name or self.current_user.email
+        }
+      })
+
     return (Model(user) for user in self.db.users.find(
             {'_id': {'$in': list(self.room.current_users)}}))
 
