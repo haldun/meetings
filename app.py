@@ -43,14 +43,10 @@ class Model(dict):
     try:
       return self[name]
     except KeyError:
-      print name
       return None
 
   def __setattr__(self, name, value):
     self[name] = value
-
-  def __getattribute__(self, name):
-    return super(Model, self).__getattribute__(name)
 
 
 class Application(tornado.web.Application):
@@ -139,7 +135,12 @@ class BaseHandler(tornado.web.RequestHandler):
     user_id = self.get_secure_cookie('user_id')
     if not user_id:
       return None
-    user = self.db.users.find_one({'_id': pymongo.objectid.ObjectId(user_id)})
+    cache_key = 'users/%s' % user_id
+    user = self.memcache.get(cache_key)
+    if user is None:
+      user = self.db.users.find_one({'_id': pymongo.objectid.ObjectId(user_id)})
+      if user:
+        self.memcache.set(cache_key, user.items())
     if user is None:
       return None
     return Model(user)
