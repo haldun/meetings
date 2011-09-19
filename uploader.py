@@ -179,35 +179,3 @@ def main():
 
 if __name__ == '__main__':
   main()
-
-@queue.worker
-def upload(item):
-  file = open(item['file'])
-  filename = item['filename']
-  bucket = item['bucket_name']
-
-  # Is this an image?
-  im = None
-
-  try:
-    im = Image.open(file)
-  except:
-    pass
-
-  # Determine message type
-  if im:
-    message_type = 'image'
-  else:
-    message_type = 'file'
-
-  # Thumbnail if image
-  if im:
-    im.thumbnail((300, 300), Image.ANTIALIAS)
-
-
-  # Upload file to the S3
-  bucket = self.get_bucket()
-  key = boto.s3.key.Key(bucket)
-  key.key = self.get_keyname()
-
-# upload()

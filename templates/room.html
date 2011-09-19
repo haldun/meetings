@@ -42,10 +42,14 @@
     </div>
   </div>
 </div>
+
+<audio id="snd_new" src="/static/sounds/New.mp3"></audio>
+
 {% end %}
 
 {% block scripts %}
 <script src="/static/javascripts/plupload.full.js"></script>
 <script src="/static/javascripts/jquery.pjax.js"></script>
+<script src="/static/javascripts/mediaelement.js"></script>
 <script>window.M = {% raw json_encode(js_context) %};</script>
 {% end %}

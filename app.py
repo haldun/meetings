@@ -267,8 +267,14 @@ class BaseRoomHandler(BaseHandler):
         }
       })
 
-    return (Model(user) for user in self.db.users.find(
-            {'_id': {'$in': list(self.room.current_users)}}))
+    return [Model(user) for user in self.db.users.find(
+            {'_id': {'$in': list(self.room.current_users)}})]
+
+  @property
+  def current_users(self):
+    if not hasattr(self, '_current_users'):
+      self._current_users = self.get_current_users()
+    return self._current_users
 
   def is_admin(self):
     return self.current_user._id in self.room.admins
@@ -276,7 +282,7 @@ class BaseRoomHandler(BaseHandler):
   def render_string(self, template_name, **kwds):
     kwds.update({
       'room': self.room,
-      'current_users': self.get_current_users(),
+      'current_users': self.current_users,
       'active_menu': self.active_menu,
       'is_admin': self.current_user._id in self.room.admins,
       'js_context': {
@@ -287,7 +293,11 @@ class BaseRoomHandler(BaseHandler):
         },
         'room': {
           'id': str(self.room._id),
-          'token': self.room.token
+          'token': self.room.token,
+          'current_users': [
+            {'id': str(user._id), 'name': user.name or user.email}
+            for user in self.current_users
+          ]
         }
       }
     })

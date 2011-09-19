@@ -43,6 +43,11 @@ function getCookie(name) {
   $('#room-menu a').removeClass('active');
   $('#room-menu a.' + M.active_menu).addClass('active');
 
+  // Sounds
+  var sounds = {
+    'new': new MediaElement('snd_new')
+  };
+
   var $form = $('#new_message');
   var $compose = $form.find('textarea');
 
@@ -86,11 +91,13 @@ function getCookie(name) {
       if (message.type == 'image' || message.type == 'file') {
         $('#messages').append(messageToDom(message));
         scroll_page();
+        sounds['new'].play();
       }
 
       if (message.type == 'text' && message.user_id !== M.current_user.id) {
         $('#messages').append(messageToDom(message));
         scroll_page();
+        sounds['new'].play();
       }
 
       if (message.type == 'presence' && message.user_id !== M.current_user.id) {
