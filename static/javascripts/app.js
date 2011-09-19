@@ -45,7 +45,9 @@ function getCookie(name) {
 
   // Sounds
   var sounds = {
-    'new': new MediaElement('snd_new')
+    'new': new MediaElement('snd_new'),
+    'on': new MediaElement('snd_on'),
+    'off': new MediaElement('snd_off')
   };
 
   var $form = $('#new_message');
@@ -106,12 +108,14 @@ function getCookie(name) {
           var el = $('<li>').attr('id', id).text(message.user_name);
           $('#room-users').append(el);
           $('#messages').append(messageToDom(message));
+          sounds['on'].play();
         }
       }
 
       if (message.type === 'leave') {
         $('#user_' + message.user_id).fadeOut('slow').remove();
         $('#messages').append(messageToDom(message));
+        sounds['off'].play();
       }
 
       if (message.type === 'topic_changed') {
