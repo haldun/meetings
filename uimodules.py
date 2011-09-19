@@ -33,6 +33,7 @@ class Messages(BaseUIModule):
       if message.type == 'image':
         name, ext = os.path.splitext(message.s3_key)
         thumbname = '%s_thumb%s'% (name, ext)
+        print message.s3_key
         message.thumbnail_url = self.application.s3.generate_url(
             1200, 'GET', self.config.s3_bucket_name, thumbname)
         message.image_url = self.application.s3.generate_url(

@@ -299,16 +299,31 @@ class MessagesHandler(BaseRoomHandler):
 
   @room_required
   def get(self):
-    recent_messages = reversed([
+    recent_messages = [
       Model(m) for m in self.db.messages.find({'room': self.room._id,}) \
                                .sort('created_at', -1)
                                .limit(100)]
-    )
+    recent_messages.reverse()
+    self.process_messages(recent_messages)
     if self.is_ajax:
       self.render('uimodules/messages.html', messages=recent_messages)
     else:
       self.render('messages.html', messages=recent_messages)
 
+  def process_messages(self, messages):
+    for message in messages:
+      if message.type == 'image':
+        name, ext = os.path.splitext(message.s3_key)
+        thumbname = '%s_thumb%s'% (name, ext)
+        message.thumbnail_url = self.application.s3.generate_url(
+            1200, 'GET', self.config.s3_bucket_name, thumbname)
+        message.image_url = self.application.s3.generate_url(
+            1200, 'GET', self.config.s3_bucket_name, message.s3_key)
+      elif message.type == 'file':
+        message.url = self.application.s3.generate_url(
+            1200, 'GET', self.config.s3_bucket_name, message.s3_key)
+      elif message.type == 'text':
+        pass
 
 class FilesHandler(BaseRoomHandler):
   active_menu = 'files'
