@@ -524,18 +524,6 @@ class InvitationsHandler(BaseRoomHandler):
                   invitation_status=InvitationStatus)
 
 
-class MembersHandler(BaseRoomHandler):
-  @room_admin_required
-  def get(self):
-    members = [
-      Model(user) 
-      for user in self.db.users.find({'_id': {'$in': list(self.room.members)}})]
-    if self.is_ajax:
-      self.render('uimodules/members.html', members=members)
-    else:
-      self.render('members.html', members=members)
-
-
 class NewInvitationHandler(BaseHandler):
   @room_admin_required
   def get(self):
@@ -604,6 +592,24 @@ class InvitationHandler(BaseHandler):
     else:
       self.redirect(self.reverse_url('auth_google') + '?next=%s' % self.request.uri)
 
+
+class MembersHandler(BaseRoomHandler):
+  @room_admin_required
+  def get(self):
+    members = self.get_members()
+    if self.is_ajax:
+      self.render('uimodules/members.html', members=members)
+    else:
+      self.render('members.html', members=members)
+  
+  def get_members(self):
+    users = [Model(user) 
+      for user in self.db.users.find({'_id': {'$in': list(self.room.members)}})]
+    for user in users:
+      if user._id in self.room.admins:
+        user.is_admin = True
+    return users
+    
 
 def main():
   tornado.options.parse_command_line()

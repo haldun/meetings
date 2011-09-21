@@ -16,13 +16,11 @@
         <td>{{ member.name }}</td>
         <td>{{ member.email }}</td>
         <td>
-          TODO
-        </td>        
+          {{ member.is_admin and 'yes' or 'no' }}
+        </td>
         <td>
-          TODO
         </td>
       </tr>
     {% end %}
   </tbody>
 </table>
-
