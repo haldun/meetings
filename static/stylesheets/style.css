@@ -34,6 +34,7 @@ body>div#footer{position:fixed;}
 #room-menu a.messages{background-position: -7px 0px}
 #room-menu a.files{background-position: -7px -32px}
 #room-menu a.transcripts{background-position: -7px -64px}
+#room-menu a.members{background-position: -7px -96px}
 #room-menu a.invitations{background-position: -7px -96px}
 #room-menu a.settings{background-position: -7px -96px}
 #room-menu a.leave{background-position: -7px -128px}

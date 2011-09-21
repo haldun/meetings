@@ -12,6 +12,7 @@
       <li><a href="{{ reverse_url('files', room._id) }}" class="files">Files</a></li>
       <li><a href="{{ reverse_url('transcripts', room._id) }}" class="transcripts">Transcripts</a></li>
       {% if is_admin %}
+        <li><a href="{{ reverse_url('members', room._id) }}" class="members">Members</a></li>
         <li><a href="{{ reverse_url('invitations', room._id) }}" class="invitations">Invitations</a></li>
         <li><a href="{{ reverse_url('settings', room._id) }}" class="settings">Settings</a></li>
       {% end %}
