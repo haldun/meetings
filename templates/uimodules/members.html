@@ -1,0 +1,28 @@
+<title>{{ room.name }} - Members</title>
+<h3>Members</h3>
+
+<table class="zebra-striped">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Admin?</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody id="members">
+    {% for member in members %}
+      <tr class="member">
+        <td>{{ member.name }}</td>
+        <td>{{ member.email }}</td>
+        <td>
+          TODO
+        </td>        
+        <td>
+          TODO
+        </td>
+      </tr>
+    {% end %}
+  </tbody>
+</table>
+

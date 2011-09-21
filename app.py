@@ -71,6 +71,7 @@ class Application(tornado.web.Application):
       url(r'/rooms/(?P<id>\w+)/delete', DeleteRoomHandler, name='delete_room'),
       url(r'/rooms/(?P<id>\w+)/invite', NewInvitationHandler, name='invite'),
       url(r'/rooms/(?P<id>\w+)/invitations', InvitationsHandler, name='invitations'),
+      url(r'/rooms/(?P<id>\w+)/members', MembersHandler, name='members')
       url(r'/i', InvitationHandler, name='invitation'),
     ]
     settings = dict(
@@ -521,6 +522,18 @@ class InvitationsHandler(BaseRoomHandler):
       self.render('invitations.html',
                   invitations=invitations,
                   invitation_status=InvitationStatus)
+
+
+class MembersHandler(BaseRoomHandler):
+  @room_admin_required
+  def get(self):
+    members = [
+      Model(user) 
+      for user in self.db.users.find({'_id': {'$in': list(self.room.members)}})]
+    if self.is_ajax:
+      self.render('uimodules/members.html', members=members)
+    else:
+      self.render('members.html', members=members)
 
 
 class NewInvitationHandler(BaseHandler):

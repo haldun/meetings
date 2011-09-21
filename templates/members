@@ -1,0 +1,5 @@
+{% extends "room.html" %}
+
+{% block innercontent %}
+  {% include 'uimodules/members.html' %}
+{% end %}

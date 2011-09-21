@@ -140,6 +140,11 @@ function getCookie(name) {
     e.preventDefault();
   });
 
+  var NOT_WRITING = 0,
+      WRITING = 1,
+      STOPPED_WRITING = 2;
+  var prev_state = NOT_WRITING, compose_state = NOT_WRITING;
+
   $compose.keypress(function(e) {
     var code = (e.keyCode ? e.keyCode : e.which);
     if (code === 13) {
@@ -155,14 +160,30 @@ function getCookie(name) {
         }
       }
     }
+  }).keyup(function(e) {
+    compose_state = WRITING;
   });
+
+  // var status_interval = setInterval( function(){
+  //   if (compose_state === NOT_WRITING) {
+  //     if (prev_state === NOT_WRITING) {
+  //       // do nothing
+  //     } else if (prev_state === WRITING) {
+  //       console.log("stopped writing");
+  //     }      
+  //   } else if (compose_state === WRITING) {
+  //     console.log("writing");
+  //   } else if (compose_state === STOPPED_WRITING) {
+  //     console.log("stopped writing");
+  //   }
+  // }, 500);
 
   var scroll_page = function() {
     $('html, body').animate({scrollTop: $(document).height()}, 'slow');
   };
 
   $('#messages').find('tr.text td').each(function(i, el) {
-    el.innerHTML = linkify(el.innerHTML);
+    // el.innerHTML = linkify(el.innerHTML);
   });
 
   if ($('#messages').length > 0) {
@@ -174,77 +195,6 @@ function getCookie(name) {
     var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
     return r ? r[1] : undefined;
   };
-
-  function format(){
-
-   var formatted_str = arguments[0] || '';
-
-   for(var i=1; i<arguments.length; i++){
-       var re = new RegExp("\\{"+(i-1)+"}", "gim");
-       formatted_str = formatted_str.replace(re, arguments[i]);
-   }
-
-   return formatted_str;
-  };
-
-
-  function linkify(s){
-     var imgexts = [".bmp", ".gif", ".jpg", ".jpeg", ".png", ".tif"];
-     var match = s.match(/(https?:\/\/.*(?=&quot;|&#39;))|[^\s\t]{0}(http:\/\/[^\s\t]*)/);
-
-     if (match !== null && match !== undefined){
-         var temp = [];
-         for (var i=0; i< match.length; i++){
-             if(match[i] !== undefined && match[i] !== null &&
-                     temp.indexOf(match[i]) === -1){
-                 temp.push(match[i]);
-             }
-         };
-         for(var i=0; i< temp.length; i++){
-             var item = temp[i];
-             var ext = item.match(/\.[^\.]+$/);
-             if (ext !== undefined && ext !== null && imgexts.indexOf(ext[0]) !== -1){
-                 s = s.replace(item, thumbinize(item));
-             }else{
-                 if (item.match(/youtube\.com\/(v|watch)/)){
-                     s = s.replace(item, youtubeVideoEmbedder(item));
-                 }else{
-                     s = s.replace(item, format("<a href='{0}' target='_blank'>{0}</a>",
-                                          item));
-                 }
-             }
-         }
-     };
-     return s;
-  };
-
-
-  function thumbinize(s){
-   return format('<a href="{0}" target="_blank"><img src="{0}" class="thumbnail" alt="{0}"></a>', s);
-  };
-
-
-  function youtubeVideoEmbedder(url){
-   var width = 300;
-   var height = 200;
-
-   var part = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9\-_]+)/);
-   if (part){
-       url = "http://www.youtube.com/v/" + part[1];
-   }
-
-   return format ('<object width="{0}" height="{1}">' +
-    '<param name="movie" value="{2}?fs=1"</param>' +
-    '<param name="allowFullScreen" value="true"></param>' +
-    '<param name="wmode" value="transparent">' +
-    '<embed src="{2}?fs=1"' +
-    ' type="application/x-shockwave-flash"'+
-    ' allowfullscreen="true"' +
-    ' width="{0}" height="{1}" wmode="transparent">' +
-    '</embed>' +
-    '</object>', width, height, url);
-  };
-
 
   // Uploader
   window.uploader = new plupload.Uploader({
@@ -291,7 +241,6 @@ function getCookie(name) {
         (err.file ? ", File: " + err.file.name : "") +
         "</div>"
       );
-
       up.refresh();
     });
 
@@ -316,7 +265,7 @@ function getCookie(name) {
 
   $(document.body).bind('end.pjax', function(xhr){
     $('#messages').find('tr.text td').each(function(i, el) {
-      el.innerHTML = linkify(el.innerHTML);
+      //el.innerHTML = linkify(el.innerHTML);
     });
     $compose.focus();
     if ($('#messages').length > 0) {
