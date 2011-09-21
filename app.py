@@ -71,7 +71,7 @@ class Application(tornado.web.Application):
       url(r'/rooms/(?P<id>\w+)/delete', DeleteRoomHandler, name='delete_room'),
       url(r'/rooms/(?P<id>\w+)/invite', NewInvitationHandler, name='invite'),
       url(r'/rooms/(?P<id>\w+)/invitations', InvitationsHandler, name='invitations'),
-      url(r'/rooms/(?P<id>\w+)/members', MembersHandler, name='members')
+      url(r'/rooms/(?P<id>\w+)/members', MembersHandler, name='members'),
       url(r'/i', InvitationHandler, name='invitation'),
     ]
     settings = dict(
