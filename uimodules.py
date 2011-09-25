@@ -63,17 +63,17 @@ class Files(BaseUIModule):
 
 class Transcripts(BaseUIModule):
   def render(self, date=None, messages=None):
-    return self.render_string('uimodules/transcripts.html', date=date, messages=messages)
+    return self.render_string('partials/transcripts.html', date=date, messages=messages)
 
 
 class Settings(BaseUIModule):
   def render(self, form):
-    return self.render_string('uimodules/settings.html', form=form)
+    return self.render_string('partials/settings.html', form=form)
 
 
 class Invitations(BaseUIModule):
   def render(self, invitations, invitation_status):
-    return self.render_string('uimodules/invitations.html',
+    return self.render_string('partials/invitations.html',
                               invitations=invitations,
                               invitation_status=invitation_status)
 

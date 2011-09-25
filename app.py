@@ -161,6 +161,11 @@ class BaseHandler(tornado.web.RequestHandler):
     return 'X-Requested-With' in self.request.headers and \
            self.request.headers['X-Requested-With'] == 'XMLHttpRequest'
 
+  def render(self, template_name, **kwds):
+    if self.is_ajax:
+      return super(BaseHandler, self).render('partials/%s' % template_name, **kwds)
+    return super(BaseHandler, self).render(template_name, **kwds)
+
 
 class IndexHandler(BaseHandler):
   def get(self):
@@ -328,10 +333,7 @@ class MessagesHandler(BaseRoomHandler):
                                .limit(100)]
     recent_messages.reverse()
     self.process_messages(recent_messages)
-    if self.is_ajax:
-      self.render('uimodules/messages.html', messages=recent_messages)
-    else:
-      self.render('messages.html', messages=recent_messages)
+    self.render('messages.html', messages=recent_messages)
 
   def process_messages(self, messages):
     for message in messages:
@@ -356,10 +358,7 @@ class FilesHandler(BaseRoomHandler):
       'room': self.room._id,
       'type': {'$in': ['file', 'image']},
     }).sort('created_at', pymongo.DESCENDING))
-    if self.is_ajax:
-      self.write(self.ui['modules']['Files'](files=files))
-    else:
-      self.render('files.html', files=files)
+    self.render('files.html', files=files)
 
 
 class TranscriptsHandler(BaseRoomHandler):
@@ -598,18 +597,18 @@ class MembersHandler(BaseRoomHandler):
   def get(self):
     members = self.get_members()
     if self.is_ajax:
-      self.render('uimodules/members.html', members=members)
+      self.render('partials/members.html', members=members)
     else:
       self.render('members.html', members=members)
-  
+
   def get_members(self):
-    users = [Model(user) 
+    users = [Model(user)
       for user in self.db.users.find({'_id': {'$in': list(self.room.members)}})]
     for user in users:
       if user._id in self.room.admins:
         user.is_admin = True
     return users
-    
+
 
 def main():
   tornado.options.parse_command_line()

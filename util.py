@@ -1,3 +1,4 @@
+import copy
 import datetime
 import hashlib
 import os
@@ -40,8 +41,6 @@ def start_of_next_month(date):
 
 
 # Copied from django with some modifications
-import copy
-
 class MultiValueDict(dict):
   """
   A subclass of dictionary customized to handle multiple values for the

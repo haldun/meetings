@@ -25,3 +25,6 @@ class InvitationForm(BaseForm):
   name = TextField('Name')
   email = TextField('Email', [Required()])
 
+
+class MemberForm(BaseForm):
+  is_admin = BooleanField('Is admin')

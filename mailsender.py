@@ -18,6 +18,18 @@ define("config_file", default="app_config.yml", help="app_config file")
 
 queue = hotqueue.HotQueue('mail', host='localhost', port=6379, db=0)
 
+class Model(dict):
+  """Like tornado.web._O but does not whine for non-existent attributes"""
+  def __getattr__(self, name):
+    try:
+      return self[name]
+    except KeyError:
+      return None
+
+  def __setattr__(self, name, value):
+    self[name] = value
+
+
 class Mailer(object):
   def __init__(self):
     pass
@@ -27,7 +39,7 @@ class Mailer(object):
     if not hasattr(self, '_config'):
       logging.debug("Loading app config")
       stream = file(options.config_file, 'r')
-      self._config = tornado.web._O(yaml.load(stream))
+      self._config = Model(yaml.load(stream))
     return self._config
 
   @queue.worker
