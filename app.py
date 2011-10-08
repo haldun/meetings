@@ -602,13 +602,3 @@ class MembersHandler(BaseRoomHandler):
         user.is_admin = True
     return users
 
-
-def main():
-  tornado.options.parse_command_line()
-  http_server = tornado.httpserver.HTTPServer(Application())
-  http_server.listen(options.port)
-  tornado.ioloop.IOLoop.instance().start()
-
-if __name__ == '__main__':
-  main()
-
