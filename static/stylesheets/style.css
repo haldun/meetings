@@ -39,3 +39,9 @@ body>div#footer{position:fixed;}
 #room-menu a.settings{background-position: -7px -96px}
 #room-menu a.leave{background-position: -7px -128px}
 #room-users li{display:block;line-height:22px;background-position:-7px -160px;text-decoration:none;padding:5px 5px 5px 20px;background-repeat:no-repeat;background-image:url(../images/sprite.png);}
+ul.transcript{list-style:none;padding:0;margin:0;}
+ul.transcript li{list-style:none;padding:0;margin:0;}
+ul.transcript span.message_time{color:#444;}
+ul.transcript span.message_user{color:green;}
+ul.transcript span.message_content{color:#444;}
+

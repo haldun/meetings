@@ -385,10 +385,7 @@ class TranscriptsHandler(BaseRoomHandler):
       }
     }).sort('created_at', 1)]
 
-    if self.is_ajax:
-      self.render('uimodules/transcripts.html', date=date, messages=messages)
-    else:
-      self.render('transcripts.html', date=date, messages=messages)
+    self.render('transcripts.html', date=date, messages=messages)
 
 
 class SettingsHandler(BaseRoomHandler):
@@ -595,11 +592,7 @@ class InvitationHandler(BaseHandler):
 class MembersHandler(BaseRoomHandler):
   @room_admin_required
   def get(self):
-    members = self.get_members()
-    if self.is_ajax:
-      self.render('partials/members.html', members=members)
-    else:
-      self.render('members.html', members=members)
+    self.render('members.html', members=self.get_members())
 
   def get_members(self):
     users = [Model(user)

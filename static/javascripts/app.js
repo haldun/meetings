@@ -26,7 +26,8 @@ function getCookie(name) {
   $('tr.room').delegate('a.danger', 'click', function(e){
     e.preventDefault();
     var self = $(this);
-    if (confirm('Are you sure to delete this room? All the messages and files in this room will also be deleted')) {
+    if (confirm('Are you sure to delete this room? All the messages and '+
+                'files in this room will also be deleted')) {
       $.post("/rooms/" + self.data('room') + "/delete", function(){
         self.parents('tr.room').fadeOut();
       });
@@ -140,10 +141,10 @@ function getCookie(name) {
     e.preventDefault();
   });
 
-  var NOT_WRITING = 0,
-      WRITING = 1,
-      STOPPED_WRITING = 2;
-  var prev_state = NOT_WRITING, compose_state = NOT_WRITING;
+  // Detect user's typing
+
+  var typingTimer;
+  var doneTypingInterval = 5000;
 
   $compose.keypress(function(e) {
     var code = (e.keyCode ? e.keyCode : e.which);
@@ -161,22 +162,14 @@ function getCookie(name) {
       }
     }
   }).keyup(function(e) {
-    compose_state = WRITING;
+    typingTimer = setTimeout(doneTyping, doneTypingInterval);
+  }).keydown(function() {
+    clearTimeout(typingTimer);
   });
 
-  // var status_interval = setInterval( function(){
-  //   if (compose_state === NOT_WRITING) {
-  //     if (prev_state === NOT_WRITING) {
-  //       // do nothing
-  //     } else if (prev_state === WRITING) {
-  //       console.log("stopped writing");
-  //     }      
-  //   } else if (compose_state === WRITING) {
-  //     console.log("writing");
-  //   } else if (compose_state === STOPPED_WRITING) {
-  //     console.log("stopped writing");
-  //   }
-  // }, 500);
+  var doneTyping = function() {
+    console.log("stopped typing");
+  };
 
   var scroll_page = function() {
     $('html, body').animate({scrollTop: $(document).height()}, 'slow');

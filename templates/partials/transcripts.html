@@ -1,14 +1,12 @@
 <title>{{ room.name }} - Transcripts</title>
 <h4>{{ date.strftime('%B %d, %A') }}</h4>
 
-<table>
-  <tbody>
-    {% for message in messages %}
-      <tr>
-        <td>{{ message.user_name }}</td>
-        <td>{{ message.created_at.strftime('%X') }}</td>
-        <td>{{ message.content }}</td>
-      </tr>
-    {% end %}
-  </tbody>
-</table>
+<ul class="transcript">
+  {% for message in messages %}
+  <li>
+    <span class="message_time">{{ message.created_at.strftime('%X') }}</span>
+    <span class="message_user">{{ message.user_name }}:</span>
+    <span class="message_content">{{ message.content }}</span>
+  </li>
+  {% end %}
+</ul>
