@@ -8,8 +8,8 @@ pubnub_publish_key: demo
 pubnub_subscribe_key: demo
 pubnub_secret_key:
 pubnub_ssl_on: False
-aws_access_key_id: AKIAJLDMFGCYJXLHWTMQ
-aws_secret_access_key: 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
+aws_access_key_id: 
+aws_secret_access_key: 
 s3_bucket_name: hb-meetings-dev
 mail_user: info@getmeetingsapp.com
 mail_pwd:
